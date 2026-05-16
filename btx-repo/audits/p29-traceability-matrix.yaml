@@ -1,0 +1,9 @@
+prompt: P-29
+status: PARTIAL
+traceability:
+  - ADR-0020 -> package scaffold + docker stack
+  - ADR-0021 -> outbox helper + check-outbox
+  - ADR-0022 -> idempotency plugin
+  - ADR-0023 -> localstack optional overlay
+gaps:
+  - BRD item-level mapping pending

@@ -1,0 +1,8 @@
+prompt: P-32
+status: PARTIAL
+scenarios:
+  - cross-node consent revoke propagation
+  - replay and dedupe under duplicate deliveries
+  - policy signature invalid fail-closed path
+pending:
+  - full testcontainers orchestration
