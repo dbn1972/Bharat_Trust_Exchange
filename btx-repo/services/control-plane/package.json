@@ -1,0 +1,17 @@
+{
+  "name": "@btx/control-plane",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^4.27.0",
+    "@btx/policy": "workspace:*",
+    "@btx/audit": "workspace:*",
+    "@btx/idempotency": "workspace:*",
+    "@btx/otel": "workspace:*"
+  }
+}
