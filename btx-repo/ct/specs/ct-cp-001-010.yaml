@@ -1,0 +1,23 @@
+suite: BTX Control Plane Conformance
+version: 0.1.0
+tests:
+  - id: CT-CP-001
+    title: health endpoint schema
+  - id: CT-CP-002
+    title: revoke consent endpoint schema
+  - id: CT-CP-003
+    title: mTLS required for mutating endpoint
+  - id: CT-CP-004
+    title: idempotency-key replay behavior
+  - id: CT-CP-005
+    title: outbox row created for revoke event
+  - id: CT-CP-006
+    title: audit emission payload schema
+  - id: CT-CP-007
+    title: policy signature failure is fail-closed
+  - id: CT-CP-008
+    title: trace headers propagated to kafka message
+  - id: CT-CP-009
+    title: pgbouncer transaction mode compatibility
+  - id: CT-CP-010
+    title: redis cache single-flight read path

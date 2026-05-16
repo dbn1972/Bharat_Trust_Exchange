@@ -1,0 +1,5 @@
+version: 0.1.0
+suites:
+  - file: ct/specs/ct-cp-001-010.yaml
+    owner: control-plane
+    phase: phase-3
