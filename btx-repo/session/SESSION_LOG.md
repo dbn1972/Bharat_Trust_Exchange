@@ -30,6 +30,9 @@ Completed:
 - Phase 6 baseline added: P-11 and P-13 runbooks, P-15 k6 skeletons with thresholds.
 
 Pending:
+- None for the approved baseline execution plan (Phases 0 to 6 scaffolding complete).
+
+Post-baseline hardening backlog:
 - Deep business logic implementation for consent lifecycle, federation state machine, and audit publisher workers.
 - Real cloud adapter implementations gated by cloud conformance certification.
 - Full integration and performance evidence from running services with testcontainers/k6.

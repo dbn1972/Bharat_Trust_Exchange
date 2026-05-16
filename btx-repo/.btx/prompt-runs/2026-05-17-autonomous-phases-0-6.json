@@ -1,0 +1,22 @@
+{
+  "run_id": "2026-05-17-autonomous-phases-0-6",
+  "scope": "baseline-phase-0-through-6",
+  "self_score": {
+    "correctness": 8,
+    "security": 8,
+    "reliability": 8,
+    "maintainability": 8,
+    "scalability": 8,
+    "performance": 8,
+    "developer_productivity": 9
+  },
+  "status": "completed-baseline",
+  "blockers": [],
+  "evidence_refs": [
+    "session/SESSION_LOG.md",
+    "docs/adr/0021-outbox-only-db-to-kafka-contract.md",
+    "docs/adr/0022-idempotency-key-contract.md",
+    "docs/adr/0023-stubs-first-localstack-optional.md",
+    "audits/p28-release-readiness.yaml"
+  ]
+}
