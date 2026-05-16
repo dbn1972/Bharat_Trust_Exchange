@@ -1,0 +1,225 @@
+# Prompt orchestration graph.
+# Edges = "complete or have an approved artefact for the upstream prompt before
+# running the downstream prompt". Used by `tools/prompt-lint.py` to validate
+# references and by humans to plan multi-step work.
+
+version: 1.0.0
+last_reviewed: 2026-05-16
+
+prompts:
+  P-01:
+    title: Bootstrap a new BTX service
+    upstream: [P-09, P-10]            # threat model/DPIA; ADR if novel pattern
+    downstream: [P-02, P-06, P-07, P-08, P-12, P-19]
+
+  P-02:
+    title: Add a control-plane API endpoint
+    upstream: [P-01, P-04, P-09]
+    downstream: [P-06, P-08, P-19, P-12]
+
+  P-03:
+    title: Implement a Trust Node feature
+    upstream: [P-04, P-09, P-10]
+    downstream: [P-06, P-08, P-11, P-12]
+
+  P-04:
+    title: Author or change a Rego policy
+    upstream: [P-09]                  # DPIA if a policy change affects PII
+    downstream: [P-08, P-12]
+
+  P-05:
+    title: Build a connector / source adapter
+    upstream: [P-09, P-10]
+    downstream: [P-06, P-08, P-11, P-12]
+
+  P-06:
+    title: Wire audit emission
+    upstream: []                      # may be triggered standalone
+    downstream: [P-08, P-12]
+
+  P-07:
+    title: Add or extend a certified cloud adapter
+    upstream: [P-10]                  # ADR for any new adapter capability
+    downstream: [P-08, P-12, P-14]
+
+  P-08:
+    title: Implement / extend a conformance test (CT-NNN)
+    upstream: []
+    downstream: [P-12]
+
+  P-09:
+    title: Threat model + DPIA
+    upstream: []
+    downstream: [P-01, P-02, P-03, P-04, P-05]
+
+  P-10:
+    title: Author an ADR
+    upstream: []
+    downstream: [P-01, P-03, P-04, P-05, P-07, P-14, P-18]
+
+  P-11:
+    title: Write runbook + chaos drill
+    upstream: []
+    downstream: [P-13]
+
+  P-12:
+    title: Release engineering (signed, attested)
+    upstream: [P-08]                  # conformance must pass before release
+    downstream: [P-20]
+
+  P-13:
+    title: Incident response
+    upstream: [P-11]                  # need runbook + detection before incident
+    downstream: [P-10, P-11]          # PIR may produce new ADR or runbook
+
+  P-14:
+    title: Portability refactor (de-lock-in)
+    upstream: [P-10, P-07]
+    downstream: [P-08, P-12]
+
+  P-15:
+    title: Performance & capacity tuning
+    upstream: []
+    downstream: [P-12]
+
+  P-16:
+    title: Code review (architecture-conformant)
+    upstream: []                       # applies to any PR
+    downstream: []
+
+  P-17:
+    title: Spec → code (PR series from approved tech spec)
+    upstream: [P-09, P-10]
+    downstream: [P-01, P-02, P-03, P-04, P-05, P-08, P-19, P-12]
+
+  P-18:
+    title: Crypto / algorithm migration (incl. PQC)
+    upstream: [P-10]
+    downstream: [P-08, P-12]
+
+  P-19:
+    title: Backfill missing tests for a service
+    upstream: []
+    downstream: [P-12]
+
+  P-20:
+    title: Generate release notes & evidence pack
+    upstream: [P-12]
+    downstream: []
+
+  # ---- Design track ----------------------------------------------------------
+  P-21:
+    title: Design system & tokens (Figma + code)
+    upstream: [P-10]                  # ADR if a foundational change
+    downstream: [P-22, P-23, P-24]
+
+  P-22:
+    title: UX research → journey & wireframes (Figma)
+    upstream: [P-09]                  # DPIA influences flow (consent moments)
+    downstream: [P-23, P-25]
+
+  P-23:
+    title: High-fidelity screens + accessibility annotations
+    upstream: [P-21, P-22]
+    downstream: [P-24, P-25]
+
+  P-24:
+    title: Design-to-code handoff (Figma → React/Tailwind)
+    upstream: [P-21, P-23]
+    downstream: [P-01, P-02, P-19, P-12]
+
+  P-25:
+    title: Usability test plan + evidence (with citizen safeguards)
+    upstream: [P-22, P-23]
+    downstream: [P-20]
+
+  # ---- Audit & governance track ---------------------------------------------
+  P-26:
+    title: Product status review (concept → production-ready)
+    upstream: []
+    downstream: [P-27, P-28, P-29]
+
+  P-27:
+    title: Cross-layer validation (spec ↔ schema ↔ API ↔ backend ↔ frontend ↔ policy ↔ audit ↔ docs ↔ tests)
+    upstream: [P-26]
+    downstream: [P-28, P-29, P-30, P-31, P-32]
+
+  P-28:
+    title: Release readiness audit (pre-P-12 gate)
+    upstream: [P-26, P-27, P-30, P-31, P-32]
+    downstream: [P-12]
+
+  P-29:
+    title: Traceability matrix (requirement → UX → API → service → schema → policy → CT → test → ADR → audit)
+    upstream: [P-27]
+    downstream: [P-28]
+
+  P-30:
+    title: Code-level security audit (OWASP / ASVS / CWE)
+    upstream: [P-27]
+    downstream: [P-28, P-12]
+
+  P-31:
+    title: Scalability fitness audit (cache-first / queue-first / federation scale)
+    upstream: [P-27]
+    downstream: [P-28, P-15]
+
+  P-32:
+    title: Deep integration test design (cross-service / cross-Trust-Node / cross-cloud)
+    upstream: [P-27]
+    downstream: [P-08, P-19, P-28]
+
+# Common chains
+chains:
+  green_field_personal_data_service:
+    - P-09   # DPIA + threat model
+    - P-10   # ADR (if novel)
+    - P-01   # bootstrap
+    - P-04   # initial policy
+    - P-06   # audit wiring (within P-01 but explicit if extended)
+    - P-08   # conformance fixtures
+    - P-19   # test backfill
+    - P-12   # release
+    - P-20   # notes
+
+  add_new_cloud:
+    - P-10   # ADR for new cloud
+    - P-07   # adapter
+    - P-08   # conformance per cloud
+    - P-12   # release
+
+  policy_change_to_production:
+    - P-09   # DPIA delta if PII
+    - P-04   # Rego + tests
+    - P-08   # CT-007 / CT-013 / CT-017
+    - P-12   # signed bundle release
+
+  incident_to_prevention:
+    - P-13   # respond
+    - P-11   # add runbook + chaos
+    - P-10   # ADR if architectural
+    - P-08   # add CT
+
+  design_new_citizen_surface:
+    - P-09   # DPIA — what consent moments / minimisation are needed
+    - P-21   # tokens / components ready or extended
+    - P-22   # research, journeys, wireframes
+    - P-23   # hi-fi + a11y annotations
+    - P-25   # usability test plan + run
+    - P-24   # handoff to code (tokens + components)
+    - P-01   # bootstrap the service backing the surface
+    - P-02   # APIs
+    - P-19   # tests
+    - P-12   # release
+    - P-20   # notes (with public surface screenshots sanitised)
+
+  pre_release_audit:
+    - P-26   # what is built / partial / missing
+    - P-27   # cross-layer alignment
+    - P-29   # traceability matrix
+    - P-30   # code security
+    - P-31   # scalability fitness
+    - P-32   # integration test design (close gaps via P-08 / P-19)
+    - P-28   # readiness audit (gate to P-12)
+    - P-12   # release
+    - P-20   # notes

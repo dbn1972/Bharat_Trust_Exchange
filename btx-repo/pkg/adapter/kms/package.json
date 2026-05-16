@@ -1,0 +1,14 @@
+{
+  "name": "@btx/adapter-kms",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./stub": "./src/stub.ts",
+    "./aws": "./src/aws.ts",
+    "./gcp": "./src/gcp.ts",
+    "./azure": "./src/azure.ts"
+  }
+}

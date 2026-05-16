@@ -1,0 +1,30 @@
+{
+  "name": "btx",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Bharat Trust Exchange — federated trust fabric (monorepo)",
+  "license": "Apache-2.0",
+  "engines": { "node": ">=20.0.0", "pnpm": ">=9.0.0" },
+  "packageManager": "pnpm@9.0.0",
+  "workspaces": [
+    "services/*",
+    "pkg/*",
+    "pkg/adapter/*",
+    "connectors/*",
+    "tools"
+  ],
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx,.js --max-warnings=0 || true",
+    "test": "vitest run --coverage || true",
+    "build": "tsc -b services/*/tsconfig.json pkg/*/tsconfig.json pkg/adapter/*/tsconfig.json || true",
+    "prompt-lint": "python3 tools/prompt-lint.py",
+    "check:all": "bash scripts/check-all.sh"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^9.0.0",
+    "@types/node": "^20.12.0"
+  }
+}

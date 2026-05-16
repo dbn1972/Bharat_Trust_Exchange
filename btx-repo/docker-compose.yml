@@ -1,0 +1,104 @@
+# BTX local dev stack — Postgres + PgBouncer + Kafka (Redpanda) + Redis + MinIO + kms-stub
+# Brings the locked stack (ADR-0020) up on one laptop with no cloud accounts.
+version: "3.9"
+
+x-healthcheck-defaults: &hc
+  interval: 5s
+  timeout: 3s
+  retries: 20
+  start_period: 10s
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: btx
+      POSTGRES_PASSWORD: btx
+      POSTGRES_DB: btx
+    ports: ["5432:5432"]
+    healthcheck:
+      <<: *hc
+      test: ["CMD-SHELL", "pg_isready -U btx"]
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker/postgres/initdb.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.22.0
+    environment:
+      DB_USER: btx
+      DB_PASSWORD: btx
+      DB_HOST: postgres
+      DB_NAME: btx
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 20
+      AUTH_TYPE: scram-sha-256
+    ports: ["6432:5432"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      <<: *hc
+      test: ["CMD-SHELL", "nc -z localhost 5432 || exit 1"]
+
+  redpanda:
+    image: redpandadata/redpanda:v24.1.7
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:9092,OUTSIDE://0.0.0.0:19092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:9092,OUTSIDE://localhost:19092
+    ports:
+      - "19092:19092"   # external (host)
+      - "9644:9644"     # admin
+    healthcheck:
+      <<: *hc
+      test: ["CMD-SHELL", "rpk cluster health -X brokers=localhost:9092 | grep -q 'Healthy: true'"]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["6379:6379"]
+    volumes: ["redis_data:/data"]
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "redis-cli", "ping"]
+
+  minio:
+    image: minio/minio:RELEASE.2024-03-15T01-07-19Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: btxadmin
+      MINIO_ROOT_PASSWORD: btxadmin123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes: ["minio_data:/data"]
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+
+  kms-stub:
+    build: ./docker/kms-stub
+    environment:
+      KMS_STUB_PORT: 8080
+      KMS_STUB_KEY_ROOT: /keys
+    ports: ["8081:8080"]
+    volumes:
+      - kms_keys:/keys
+    healthcheck:
+      <<: *hc
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+
+volumes:
+  pg_data:
+  redis_data:
+  minio_data:
+  kms_keys:

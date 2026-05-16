@@ -1,0 +1,2 @@
+# Prompt-run audit log home.
+# Each run emits: <run_id>.json with self_score, evidence_refs, blockers.

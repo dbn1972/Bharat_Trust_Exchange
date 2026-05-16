@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.turbo/
+.cache/
+coverage/
+.pnpm-store/
+*.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+
+# generated
+sbom.json
+**/openapi.yaml.bak
+.btx/prompt-runs/*.json
+evidence/audits/*.tar.gz
+evidence/audits/*.sig
+
+# allow these as templates / fixtures
+!.btx/prompt-runs/.gitkeep
+!evidence/audits/.gitkeep

@@ -1,0 +1,18 @@
+# Optional overlay: replaces kms-stub with LocalStack (AWS KMS+S3+Secrets free tier).
+# Use only for hardening the AWS adapter. NOT the default dev path.
+#   make dev-aws
+version: "3.9"
+
+services:
+  kms-stub:
+    image: localstack/localstack:3.4
+    environment:
+      SERVICES: kms,s3,secretsmanager
+      DEFAULT_REGION: ap-south-1
+      AWS_DEFAULT_REGION: ap-south-1
+      DEBUG: 0
+    ports:
+      - "4566:4566"
+      - "8081:4566"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"

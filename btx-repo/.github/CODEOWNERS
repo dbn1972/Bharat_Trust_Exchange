@@ -1,0 +1,54 @@
+# CODEOWNERS — required reviewers per path
+# Syntax: <path-glob>  <@owner1> <@owner2> ...
+# GitHub merges the most specific matching rule.
+
+# Defaults
+*                                       @chief-architect @platform-lead
+
+# Architecture & governance docs
+/docs/architecture/                     @chief-architect
+/docs/adr/                              @chief-architect
+/docs/security/                         @security-lead
+/docs/templates/                        @chief-architect
+
+# Agent / contributor surfaces
+/AGENTS.md                              @chief-architect @platform-lead
+/CLAUDE.md                              @chief-architect @platform-lead
+/CONTRIBUTING.md                        @chief-architect
+/.github/                               @platform-lead @security-lead
+
+# Policies (Rego) — dual approval
+/policy/                                @security-lead @privacy-lead
+
+# Security-critical services
+/services/trust-node/                   @security-lead @platform-lead
+/services/purposeguard-pdp/             @security-lead
+/services/signed-config-publisher/      @security-lead
+/services/audit-ledger/                 @security-lead
+
+# Privacy-critical services
+/services/citizen-portal/               @privacy-lead
+/services/approval-workflow/            @privacy-lead
+
+# Control-plane services
+/services/member-registry/              @platform-lead
+/services/service-catalogue/            @platform-lead
+/services/purpose-registry/             @platform-lead @privacy-lead
+/services/schemahub/                    @platform-lead
+
+# Trust Console (governance UI)
+/services/trust-console/                @platform-lead @ux-lead
+
+# Developer Portal
+/services/developer-portal/             @platform-lead @ux-lead
+
+# Platform, infra, connectors
+/platform/                              @platform-lead @security-lead
+/infrastructure/                        @platform-lead @security-lead
+/connectors/                            @platform-lead
+
+# CI/CD workflows
+/.github/workflows/                     @platform-lead @security-lead
+
+# Conformance suite
+/certify/                               @qa-lead @security-lead
