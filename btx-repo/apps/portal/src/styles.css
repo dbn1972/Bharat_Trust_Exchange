@@ -1,0 +1,53 @@
+:root {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  color: #0f172a;
+  background: radial-gradient(circle at top right, #d1fae5, #f8fafc 45%, #e2e8f0 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.portal-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.portal-header {
+  max-width: 960px;
+  margin: 0 auto 16px auto;
+}
+
+.portal-header h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.portal-header p {
+  margin: 6px 0 0 0;
+  color: #334155;
+}
+
+.portal-content {
+  max-width: 960px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .portal-shell {
+    padding: 14px;
+  }
+
+  .portal-content {
+    padding: 14px;
+  }
+}

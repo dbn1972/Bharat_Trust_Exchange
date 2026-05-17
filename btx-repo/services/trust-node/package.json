@@ -11,6 +11,8 @@
     "fastify": "^4.27.0",
     "@btx/audit": "workspace:*",
     "@btx/adapter-kms": "workspace:*",
-    "@btx/otel": "workspace:*"
+    "@btx/otel": "workspace:*",
+    "@btx/bootstrap": "workspace:*",
+    "pg": "^8.13.1"
   }
 }

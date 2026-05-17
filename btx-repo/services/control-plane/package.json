@@ -12,6 +12,11 @@
     "@btx/policy": "workspace:*",
     "@btx/audit": "workspace:*",
     "@btx/idempotency": "workspace:*",
-    "@btx/otel": "workspace:*"
+    "@btx/otel": "workspace:*",
+    "@btx/bootstrap": "workspace:*",
+    "@btx/adapter-objectstore": "workspace:*",
+    "ioredis": "^5.4.1",
+    "kafkajs": "^2.2.4",
+    "pg": "^8.13.1"
   }
 }

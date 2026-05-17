@@ -72,12 +72,12 @@ export async function getCloudConfig(): Promise<CloudConfig> {
       return {
         provider: 'stub',
         kmsConfig: {
-          stubUrl: process.env.KMS_STUB_URL || 'http://kms-stub:8081'
+          endpoint: process.env.KMS_STUB_URL || 'http://localhost:8081'
         },
         objectStoreConfig: {
-          endpoint: process.env.MINIO_ENDPOINT || 'http://minio:9000',
-          accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-          secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin'
+          endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+          accessKey: process.env.MINIO_ACCESS_KEY || 'btxadmin',
+          secretKey: process.env.MINIO_SECRET_KEY || 'btxadmin123'
         }
       };
   }

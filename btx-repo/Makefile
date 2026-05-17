@@ -26,7 +26,7 @@ integration: ## run integration tests (requires docker-compose up)
 	echo "[integration] $$SVC"; \
 	bash scripts/run-integration.sh $$SVC
 
-certify: ## run conformance tests
+certify: ## run executable end-to-end conformance tests
 	@CT=$${CT:-all}; CLOUD=$${CLOUD:-stub}; \
 	echo "[certify] CT=$$CT CLOUD=$$CLOUD"; \
 	bash scripts/run-ct.sh $$CT $$CLOUD

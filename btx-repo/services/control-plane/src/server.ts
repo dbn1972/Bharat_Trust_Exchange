@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import Redis from 'ioredis';
 import { Pool } from 'pg';
 import { ConsentsRepository, AuditRepository, OutboxRepository } from './adapter/db/repository';
 import { ConsentService } from './domain/consent-service';
@@ -19,11 +20,11 @@ const app = Fastify({ logger: true });
 
 // Initialize database pool
 const pool = new Pool({
-  host: process.env.DB_HOST || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB_NAME || 'btx',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  user: process.env.DB_USER || 'btx',
+  password: process.env.DB_PASSWORD || 'btx',
   max: 10,
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000
@@ -57,12 +58,8 @@ let objectStore: ObjectStoreAdapter | undefined;
  * can be tested with any in-memory or real Redis implementation.
  */
 function createRedisClient(): RedisLike {
-  // Dynamic import of ioredis so the module is optional in test environments
-  // where Redis is not available. The idempotency plugin is a no-op when
-  // BTX_API_KEY is unset, matching the dev/test safety valve on auth.
-  const Redis = require('ioredis'); // eslint-disable-line @typescript-eslint/no-var-requires
   return new Redis({
-    host: process.env.REDIS_HOST || 'redis',
+    host: process.env.REDIS_HOST || 'localhost',
     port: Number(process.env.REDIS_PORT || 6379),
     password: process.env.REDIS_PASSWORD || undefined,
     lazyConnect: true,
@@ -102,7 +99,7 @@ async function reconfigureOutboxPublisher(provider: MessageBrokerProvider, broke
   const nextConfig = brokerPluginStore.update({ provider, brokers });
   const wasRunning = outboxPublisher.getStatus().running;
 
-  outboxPublisher.stop();
+  await outboxPublisher.stop();
   await outboxPublisher.disconnect().catch(() => undefined);
 
   outboxPublisher = new OutboxPublisher(pool, {
@@ -174,13 +171,13 @@ app.post('/v1/consents', {
       }
     }
   }
-}, async (req) => {
+}, async (req, reply) => {
   const grant = req.body as any;
   const actorNodeId = req.headers['x-node-id'] as string || grant.fromNodeId;
   
   try {
     const consent = await consentService.grant(grant, actorNodeId);
-    return { code: 201, payload: consent };
+    return reply.code(201).send(consent);
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
@@ -382,7 +379,11 @@ app.get('/v1/consents/:consentId/audit', {
 
   try {
     const events = await consentService.getAuditTrail(consentId);
-    return events;
+    return events.map((event) => ({
+      ...event,
+      id: event.id.toString(),
+      merkleIndex: event.merkleIndex?.toString(),
+    }));
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
@@ -424,14 +425,14 @@ app.addHook('onReady', async () => {
 
 app.addHook('onClose', async () => {
   expiryJob.stop();
-  outboxPublisher.stop();
+  await outboxPublisher.stop();
   await outboxPublisher.disconnect();
   if (redisClient && 'quit' in redisClient) await (redisClient as any).quit();
   await pool.end();
   app.log.info('[control-plane] Cleanup complete');
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && process.env.BTX_MANUAL_LISTEN !== 'true') {
   app.listen({ host: '0.0.0.0', port: Number(process.env.PORT ?? 3002) })
     .catch((err) => {
       app.log.error(err);

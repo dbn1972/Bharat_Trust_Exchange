@@ -12,6 +12,7 @@
     "@btx/adapter-log": "workspace:*",
     "@btx/adapter-kms": "workspace:*",
     "@btx/idempotency": "workspace:*",
-    "@btx/otel": "workspace:*"
+    "@btx/otel": "workspace:*",
+    "pg": "^8.13.1"
   }
 }

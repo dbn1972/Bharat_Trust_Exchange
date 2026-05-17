@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { Consent, ConsentStatus, ConsentGrant, AuditEvent, AuditEventType, OutboxEvent } from '../domain/consent';
+import { Consent, ConsentStatus, ConsentGrant, AuditEvent, AuditEventType, OutboxEvent } from '../../domain/consent';
 
 /**
  * ConsentsRepository: Data access layer for consent lifecycle

@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Trust node registry: BTX federation member directory
 CREATE TABLE IF NOT EXISTS trust_nodes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

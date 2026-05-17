@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { FederationState, PeerSyncRequest, PeerSyncEvent } from '../domain/federation';
+import { FederationState, PeerSyncRequest, PeerSyncEvent } from '../../domain/federation';
 import crypto from 'crypto';
 
 /**
@@ -29,9 +29,12 @@ export class FederationRepository {
 
   async updateSyncCursor(nodeId: string, cursor: bigint): Promise<void> {
     await this.pool.query(
-      `UPDATE federation_state 
-       SET sync_cursor = $2, last_sync_at = NOW(), updated_at = NOW()
-       WHERE node_id = $1`,
+      `INSERT INTO federation_state (node_id, sync_cursor, last_sync_at, status)
+       VALUES ($1, $2, NOW(), 'active')
+       ON CONFLICT (node_id) DO UPDATE SET
+         sync_cursor = EXCLUDED.sync_cursor,
+         last_sync_at = EXCLUDED.last_sync_at,
+         updated_at = NOW()`,
       [nodeId, cursor]
     );
   }

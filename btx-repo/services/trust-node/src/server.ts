@@ -10,11 +10,11 @@ const app = Fastify({ logger: true });
 
 // Initialize database pool
 const pool = new Pool({
-  host: process.env.DB_HOST || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
   port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB_NAME || 'btx',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  user: process.env.DB_USER || 'btx',
+  password: process.env.DB_PASSWORD || 'btx',
   max: 10
 });
 
@@ -109,9 +109,12 @@ app.post('/v1/federation/sync', {
       }
     }
   }
-}, async (req) => {
+}, async (req, reply) => {
   const { peerNodeId, cursor, merkleRootHash, signature } = req.body as any;
-  const peerPublicKeyPem = req.headers['x-peer-public-key'] as string;
+  const rawPeerPublicKey = req.headers['x-peer-public-key'] as string;
+  const peerPublicKeyPem = rawPeerPublicKey?.includes('BEGIN PUBLIC KEY')
+    ? rawPeerPublicKey
+    : Buffer.from(rawPeerPublicKey || '', 'base64').toString('utf8');
 
   try {
     const syncEvent = await federationService.syncFromPeer(
@@ -119,24 +122,18 @@ app.post('/v1/federation/sync', {
       peerPublicKeyPem
     );
 
-    return {
-      code: 202,
-      payload: {
-        syncId: syncEvent.id.toString(),
-        status: syncEvent.status,
-        accepted: syncEvent.status === 'verified'
-      }
-    };
+    return reply.code(202).send({
+      syncId: syncEvent.id.toString(),
+      status: syncEvent.status,
+      accepted: syncEvent.status === 'verified'
+    });
   } catch (err) {
     app.log.error(err);
-    return {
-      code: 202,
-      payload: {
-        status: 'error',
-        accepted: false,
-        message: (err as Error).message
-      }
-    };
+    return reply.code(202).send({
+      status: 'error',
+      accepted: false,
+      message: (err as Error).message
+    });
   }
 });
 
@@ -168,7 +165,10 @@ app.get('/v1/federation/state/:nodeId', {
     if (!state) {
       state = await federationRepo.initializeFederationState(nodeId);
     }
-    return state;
+    return {
+      ...state,
+      syncCursor: Number(state.syncCursor),
+    };
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
@@ -195,7 +195,11 @@ app.get('/v1/federation/pending', {
 }, async () => {
   try {
     const pending = await federationService.getPendingSyncs();
-    return pending;
+    return pending.map((sync) => ({
+      ...sync,
+      id: Number(sync.id),
+      cursor: Number(sync.cursor),
+    }));
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
@@ -221,7 +225,7 @@ app.addHook('onClose', async () => {
   app.log.info('[trust-node] Cleanup complete');
 });
 
-if (process.env.NODE_ENV !== 'test') {
+if (process.env.NODE_ENV !== 'test' && process.env.BTX_MANUAL_LISTEN !== 'true') {
   app.listen({ host: '0.0.0.0', port: Number(process.env.PORT ?? 3003) })
     .catch((err) => {
       app.log.error(err);

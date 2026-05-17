@@ -1,6 +1,6 @@
 import { Kafka } from 'kafkajs';
 import { Pool } from 'pg';
-import { OutboxRepository } from '../adapter/db/repository';
+import { OutboxRepository } from '../db/repository';
 
 /**
  * OutboxPublisher: Worker that drains outbox table and publishes to Kafka (ADR-0021)
@@ -11,6 +11,7 @@ export class OutboxPublisher {
   private producer: any;
   private repository: OutboxRepository;
   private running = false;
+  private workerPromise: Promise<void> | null = null;
   private lastError: Error | null = null;
 
   constructor(
@@ -52,25 +53,30 @@ export class OutboxPublisher {
   async start(interval: number = 1000): Promise<void> {
     if (this.running) return;
     this.running = true;
+    this.workerPromise = (async () => {
+      while (this.running) {
+        try {
+          await this.drainOnce();
+        } catch (err) {
+          this.lastError = err as Error;
+          console.error('[OutboxPublisher] Drain error:', err);
+        }
 
-    while (this.running) {
-      try {
-        await this.drainOnce();
-      } catch (err) {
-        this.lastError = err as Error;
-        console.error('[OutboxPublisher] Drain error:', err);
+        // Wait before next drain
+        await new Promise(resolve => setTimeout(resolve, interval));
       }
-
-      // Wait before next drain
-      await new Promise(resolve => setTimeout(resolve, interval));
-    }
+    })();
   }
 
   /**
    * Stop the worker
    */
-  stop(): void {
+  async stop(): Promise<void> {
     this.running = false;
+    if (this.workerPromise) {
+      await this.workerPromise;
+      this.workerPromise = null;
+    }
   }
 
   /**

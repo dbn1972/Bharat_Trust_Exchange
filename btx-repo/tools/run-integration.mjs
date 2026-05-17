@@ -1,74 +1,35 @@
 #!/usr/bin/env node
-import { ok, pending, fail, hasPath } from './_check-common.mjs';
-import { execSync } from 'node:child_process';
-import path from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { ok, fail } from './_check-common.mjs';
 
-const name = path.basename(process.argv[1], '.mjs');
-const args = process.argv.slice(2);
+const service = process.argv[2] || 'control-plane';
 
-function hasCmd(cmd) {
-  try {
-    execSync('command -v ' + cmd, { stdio: 'ignore', shell: '/bin/bash' });
-    return true;
-  } catch {
-    return false;
-  }
+const suiteMap = {
+  all: [
+    'tests/phase7-integration.test.ts',
+    'tests/phase9-e2e-integration.test.ts',
+  ],
+  'control-plane': ['tests/phase7-integration.test.ts'],
+  registry: ['tests/phase9-e2e-integration.test.ts'],
+  'trust-node': ['tests/phase9-e2e-integration.test.ts'],
+};
+
+const suites = suiteMap[service];
+if (!suites) {
+  fail('run-integration', 'unsupported-service', { service, supported: Object.keys(suiteMap) });
 }
 
-if (name === 'sast-scan') {
-  if (!hasCmd('semgrep')) pending(name, 'semgrep-not-installed');
-  ok(name, { runner: 'semgrep', mode: 'placeholder' });
+try {
+  execFileSync(
+    'pnpm',
+    ['exec', 'vitest', 'run', '--config', 'vitest.integration.config.ts', ...suites],
+    { stdio: 'inherit', env: process.env }
+  );
+  ok('run-integration', { service, suites });
+} catch (error) {
+  fail('run-integration', 'integration-suite-failed', {
+    service,
+    suites,
+    message: error instanceof Error ? error.message : String(error),
+  });
 }
-
-if (name === 'secret-scan') {
-  if (!hasCmd('gitleaks')) pending(name, 'gitleaks-not-installed');
-  ok(name, { runner: 'gitleaks', mode: 'placeholder' });
-}
-
-if (name === 'dep-scan') {
-  if (!hasPath('package.json')) fail(name, 'missing-package-json');
-  ok(name, { runner: 'npm-audit-placeholder' });
-}
-
-if (name === 'iac-scan') {
-  if (!hasPath('infra')) pending(name, 'no-infra-dir');
-  ok(name, { runner: 'tfsec-placeholder' });
-}
-
-if (name === 'check-kms-adapter') {
-  const p = 'pkg/adapter/kms/src/index.ts';
-  if (!hasPath(p)) fail(name, 'kms-adapter-missing', { path: p });
-  ok(name, { verified: [p] });
-}
-
-if (name === 'check-idempotency') {
-  const p = 'pkg/idempotency/src/index.ts';
-  if (!hasPath(p)) fail(name, 'idempotency-plugin-missing', { path: p });
-  ok(name, { verified: [p] });
-}
-
-if (name === 'check-otel') {
-  const p = 'pkg/otel/src/index.ts';
-  if (!hasPath(p)) fail(name, 'otel-package-missing', { path: p });
-  ok(name, { verified: [p] });
-}
-
-if (name === 'check-fastify-schemas') {
-  const root = args[0] || 'services';
-  if (!hasPath(root)) fail(name, 'services-root-missing', { root });
-  ok(name, { root, mode: 'structural-check' });
-}
-
-if (name === 'check-outbox') {
-  const p = 'pkg/audit/src/index.ts';
-  if (!hasPath(p)) fail(name, 'audit-package-missing', { path: p });
-  ok(name, { verified: [p], rule: 'appendInTx' });
-}
-
-if (name === 'check-pgbouncer-compat') {
-  const p = 'docker-compose.yml';
-  if (!hasPath(p)) fail(name, 'missing-compose', { path: p });
-  ok(name, { checked: p, mode: 'transaction-pool-required' });
-}
-
-ok(name, { mode: 'placeholder', args });

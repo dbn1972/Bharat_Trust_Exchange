@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Consents table: core domain entity for BTX consent lifecycle
 CREATE TABLE IF NOT EXISTS consents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
