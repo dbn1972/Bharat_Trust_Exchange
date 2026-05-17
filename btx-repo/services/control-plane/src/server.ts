@@ -9,6 +9,11 @@ import type { ObjectStoreAdapter } from '@btx/adapter-objectstore';
 import { idempotencyPlugin } from '@btx/idempotency';
 import type { RedisLike } from '@btx/idempotency';
 import { ConsentExpiryJob } from './adapter/jobs/expiry-job';
+import {
+  buildInitialBrokerPluginConfig,
+  createBrokerPluginConfigStore,
+  type MessageBrokerProvider,
+} from './domain/broker-plugin-config';
 
 const app = Fastify({ logger: true });
 
@@ -74,9 +79,41 @@ const expiryJob = new ConsentExpiryJob(
   Number(process.env.EXPIRY_JOB_INTERVAL_MS || 60_000)
 );
 
-// Initialize outbox publisher
-const kafkaBrokers = (process.env.KAFKA_BROKERS || 'redpanda:9092').split(',');
-const outboxPublisher = new OutboxPublisher(pool, { brokers: kafkaBrokers });
+// Message broker plugin configuration (admin-configurable)
+const brokerPluginStore = createBrokerPluginConfigStore(
+  buildInitialBrokerPluginConfig(process.env)
+);
+
+let outboxPublisher = new OutboxPublisher(pool, {
+  brokers: brokerPluginStore.get().brokers,
+});
+
+function assertAdminAuthorized(req: any): void {
+  const apiKey = process.env.BTX_API_KEY;
+  if (!apiKey) return;
+
+  const auth = req.headers?.authorization;
+  if (!auth || auth !== `Bearer ${apiKey}`) {
+    throw { statusCode: 401, message: 'Unauthorized' };
+  }
+}
+
+async function reconfigureOutboxPublisher(provider: MessageBrokerProvider, brokers?: string[]): Promise<void> {
+  const nextConfig = brokerPluginStore.update({ provider, brokers });
+  const wasRunning = outboxPublisher.getStatus().running;
+
+  outboxPublisher.stop();
+  await outboxPublisher.disconnect().catch(() => undefined);
+
+  outboxPublisher = new OutboxPublisher(pool, {
+    brokers: nextConfig.brokers,
+  });
+
+  if (wasRunning) {
+    await outboxPublisher.connect();
+    outboxPublisher.start(1000);
+  }
+}
 
 // Health check endpoint
 app.get('/healthz', {
@@ -144,6 +181,95 @@ app.post('/v1/consents', {
   try {
     const consent = await consentService.grant(grant, actorNodeId);
     return { code: 201, payload: consent };
+  } catch (err) {
+    app.log.error(err);
+    throw { statusCode: 400, message: (err as Error).message };
+  }
+});
+
+// Admin: message broker plugin config (redpanda|kafka)
+app.get('/v1/admin/plugins/message-broker', {
+  schema: {
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          plugin: { type: 'string' },
+          provider: { type: 'string', enum: ['redpanda', 'kafka'] },
+          brokers: { type: 'array', items: { type: 'string' } },
+          updatedAt: { type: 'string' },
+          source: { type: 'string' },
+          outbox: {
+            type: 'object',
+            properties: {
+              running: { type: 'boolean' },
+              lastError: { type: 'string' },
+            },
+            required: ['running'],
+          },
+        },
+        required: ['plugin', 'provider', 'brokers', 'updatedAt', 'source', 'outbox'],
+      },
+    },
+  },
+}, async (req) => {
+  assertAdminAuthorized(req);
+  const cfg = brokerPluginStore.get();
+  const status = outboxPublisher.getStatus();
+  return {
+    plugin: 'message-broker',
+    provider: cfg.provider,
+    brokers: cfg.brokers,
+    updatedAt: cfg.updatedAt,
+    source: cfg.source,
+    outbox: {
+      running: status.running,
+      lastError: status.lastError?.message,
+    },
+  };
+});
+
+app.put('/v1/admin/plugins/message-broker', {
+  schema: {
+    body: {
+      type: 'object',
+      properties: {
+        provider: { type: 'string', enum: ['redpanda', 'kafka'] },
+        brokers: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['provider'],
+      additionalProperties: false,
+    },
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          provider: { type: 'string', enum: ['redpanda', 'kafka'] },
+          brokers: { type: 'array', items: { type: 'string' } },
+          updatedAt: { type: 'string' },
+        },
+        required: ['ok', 'provider', 'brokers', 'updatedAt'],
+      },
+    },
+  },
+}, async (req) => {
+  assertAdminAuthorized(req);
+
+  const body = req.body as {
+    provider: MessageBrokerProvider;
+    brokers?: string[];
+  };
+
+  try {
+    await reconfigureOutboxPublisher(body.provider, body.brokers);
+    const cfg = brokerPluginStore.get();
+    return {
+      ok: true,
+      provider: cfg.provider,
+      brokers: cfg.brokers,
+      updatedAt: cfg.updatedAt,
+    };
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
