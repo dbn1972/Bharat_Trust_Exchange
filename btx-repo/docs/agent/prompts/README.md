@@ -39,6 +39,9 @@
 | P-18 | [Migrate algorithm / crypto (incl. PQC)](p18-crypto-migration.prompt.md) | Algorithm agility change |
 | P-19 | [Backfill missing tests for a service](p19-test-backfill.prompt.md) | Coverage / mutation gaps |
 | P-20 | [Generate release notes & evidence pack](p20-release-notes.prompt.md) | Post-build paperwork |
+| P-33 | [Replace placeholder release gates](p33-real-release-gates.prompt.md) | Turn `make integration` / `make certify` into executable release evidence |
+| P-34 | [Build production E2E harness](p34-production-e2e-harness.prompt.md) | Convert phase 7/9 scaffold tests into real hermetic end-to-end verification |
+| P-35 | [Mount admin portal runtime surface](p35-admin-portal-runtime.prompt.md) | Turn admin plugin UI components into a runnable secured portal surface |
 
 ## Authoring rules for new prompts
 

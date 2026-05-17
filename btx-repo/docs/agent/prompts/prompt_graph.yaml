@@ -169,6 +169,21 @@ prompts:
     upstream: [P-27]
     downstream: [P-08, P-19, P-28]
 
+  P-33:
+    title: Replace placeholder release gates with executable verification
+    upstream: [P-27, P-28, P-32]
+    downstream: [P-12]
+
+  P-34:
+    title: Build a production-grade end-to-end integration harness
+    upstream: [P-19, P-32]
+    downstream: [P-28]
+
+  P-35:
+    title: Turn the admin plugin UI into a runnable portal surface
+    upstream: [P-24, P-27]
+    downstream: [P-19, P-28]
+
 # Common chains
 chains:
   green_field_personal_data_service:
@@ -220,6 +235,15 @@ chains:
     - P-30   # code security
     - P-31   # scalability fitness
     - P-32   # integration test design (close gaps via P-08 / P-19)
+    - P-33   # real release gates
+    - P-34   # executable E2E evidence
     - P-28   # readiness audit (gate to P-12)
     - P-12   # release
     - P-20   # notes
+
+  close_remaining_release_gaps:
+    - P-33   # replace placeholder gates first
+    - P-34   # convert scaffolds to real end-to-end tests
+    - P-35   # mount the admin runtime surface
+    - P-28   # re-run readiness audit on real evidence
+    - P-12   # release once gates are trustworthy
