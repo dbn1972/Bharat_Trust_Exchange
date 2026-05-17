@@ -1,38 +1,55 @@
 /**
- * k6 performance test suite for BTX
- * Validates latency budgets and throughput under load
- * 
+ * k6 performance test suite — BTX consent lifecycle
+ *
+ * P-15 regression guardrails aligned to ADR-0020 latency budgets:
+ *   Consent allow/deny  budget 80ms  → p(99) < 80ms
+ *   Audit append        budget 60ms  → measured in-transaction with grant
+ *   Error rate cap      5%           → tightened from 10% (phase-9 baseline)
+ *
+ * Scenarios (select via -e SCENARIOS=<name>):
+ *   load  (default) — ramp 10→50 VUs, 2-min sustained
+ *   soak            — 20 VUs for 10 min (detect memory/connection leaks)
+ *   spike           — sudden 5→200 VU spike (test circuit breakers)
+ *
  * Usage:
  *   k6 run tests/perf-consent-lifecycle.k6.js
- *   k6 run tests/perf-federation-sync.k6.js
+ *   k6 run tests/perf-consent-lifecycle.k6.js -e BASE_URL=http://staging:3002
+ *   k6 run tests/perf-consent-lifecycle.k6.js -e SCENARIOS=soak
  */
 
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
-import { Trend, Counter } from 'k6/metrics';
+import { Trend, Counter, Rate } from 'k6/metrics';
 
-// Custom metrics
-const consentGrantLatency = new Trend('consent_grant_latency', { unit: 'ms' });
-const consentQueryLatency = new Trend('consent_query_latency', { unit: 'ms' });
-const federationSyncLatency = new Trend('federation_sync_latency', { unit: 'ms' });
+// Custom metrics — P-15: explicit time=true for Grafana histogram buckets
+const consentGrantLatency = new Trend('consent_grant_latency', true);
+const consentQueryLatency = new Trend('consent_query_latency', true);
+const consentRevokeLatency = new Trend('consent_revoke_latency', true);
+const consentAuditLatency = new Trend('consent_audit_latency', true);
 
 const consentGrantErrors = new Counter('consent_grant_errors');
 const consentQueryErrors = new Counter('consent_query_errors');
+const errorRate = new Rate('error_rate');
+
+const SCENARIO = __ENV.SCENARIOS || 'load';
+const STAGES = {
+  load:  [ { duration: '30s', target: 10 }, { duration: '1m',  target: 50 }, { duration: '2m',  target: 50 }, { duration: '30s', target: 0 } ],
+  soak:  [ { duration: '1m',  target: 20 }, { duration: '10m', target: 20 }, { duration: '30s', target: 0 } ],
+  spike: [ { duration: '10s', target: 5  }, { duration: '10s', target: 200}, { duration: '1m',  target: 200}, { duration: '10s', target: 0 } ],
+};
 
 export const options = {
-  stages: [
-    { duration: '30s', target: 10 },  // Ramp-up to 10 VUs
-    { duration: '1m', target: 50 },   // Ramp-up to 50 VUs
-    { duration: '2m', target: 50 },   // Sustained at 50 VUs
-    { duration: '30s', target: 0 },   // Ramp-down
-  ],
+  stages: STAGES[SCENARIO] || STAGES.load,
+  // P-15 CI regression guardrails — build fails if these thresholds are breached
   thresholds: {
-    'consent_grant_latency': ['p(99)<50'],     // 99th percentile < 50ms
-    'consent_query_latency': ['p(99)<50'],     // 99th percentile < 50ms
-    'federation_sync_latency': ['p(99)<100'],  // 99th percentile < 100ms
-    'http_req_duration': ['p(95)<100'],        // 95th percentile < 100ms
-    'http_req_failed': ['rate<0.1'],           // <10% error rate
-  }
+    'consent_grant_latency':  ['p(99)<80', 'p(95)<60'],  // ADR-0020 budget 80ms
+    'consent_query_latency':  ['p(99)<80', 'p(95)<60'],  // ADR-0020 budget 80ms
+    'consent_revoke_latency': ['p(99)<80'],
+    'consent_audit_latency':  ['p(99)<60'],              // ADR-0020 audit budget 60ms
+    'http_req_duration':      ['p(95)<80'],
+    'http_req_failed':        ['rate<0.05'],             // tightened from 10% → 5%
+    'error_rate':             ['rate<0.05'],
+  },
 };
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3002';
