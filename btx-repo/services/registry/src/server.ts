@@ -55,6 +55,7 @@ app.post('/v1/nodes', {
         name: { type: 'string' },
         endpointUrl: { type: 'string', format: 'uri' },
         publicKeyPem: { type: 'string' },
+        apiVersion: { type: 'string', default: 'v1' },
         capabilities: { type: 'array', items: { type: 'string' } },
         metadata: { type: 'object' }
       },
@@ -66,6 +67,7 @@ app.post('/v1/nodes', {
         properties: {
           nodeId: { type: 'string' },
           name: { type: 'string' },
+          apiVersion: { type: 'string' },
           status: { type: 'string' }
         },
         required: ['nodeId', 'name', 'status']

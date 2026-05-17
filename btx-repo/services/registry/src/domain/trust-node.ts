@@ -8,6 +8,7 @@ export interface TrustNode {
   name: string;
   endpointUrl: string;
   publicKeyPem: string;
+  apiVersion: string; // Highest API version advertised (ADR-0024)
   status: 'active' | 'inactive' | 'revoked';
   metadata: Record<string, unknown>;
   capabilities: string[];
@@ -21,6 +22,7 @@ export interface TrustNodeRegistration {
   name: string;
   endpointUrl: string;
   publicKeyPem: string;
+  apiVersion?: string; // defaults to 'v1'
   capabilities?: string[];
   metadata?: Record<string, unknown>;
 }

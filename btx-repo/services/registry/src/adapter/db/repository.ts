@@ -10,12 +10,13 @@ export class RegistryRepository {
   async register(registration: TrustNodeRegistration): Promise<TrustNode> {
     const result = await this.pool.query(
       `INSERT INTO trust_nodes 
-       (node_id, name, endpoint_url, public_key_pem, capabilities, metadata)
-       VALUES ($1, $2, $3, $4, $5, $6)
+       (node_id, name, endpoint_url, public_key_pem, api_version, capabilities, metadata)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (node_id) DO UPDATE SET
          name = EXCLUDED.name,
          endpoint_url = EXCLUDED.endpoint_url,
          public_key_pem = EXCLUDED.public_key_pem,
+         api_version = EXCLUDED.api_version,
          capabilities = EXCLUDED.capabilities,
          metadata = EXCLUDED.metadata,
          updated_at = NOW()
@@ -25,6 +26,7 @@ export class RegistryRepository {
         registration.name,
         registration.endpointUrl,
         registration.publicKeyPem,
+        registration.apiVersion || 'v1',
         JSON.stringify(registration.capabilities || []),
         JSON.stringify(registration.metadata || {})
       ]
@@ -73,6 +75,7 @@ export class RegistryRepository {
       name: row.name,
       endpointUrl: row.endpoint_url,
       publicKeyPem: row.public_key_pem,
+      apiVersion: row.api_version || 'v1',
       status: row.status,
       metadata: row.metadata || {},
       capabilities: row.capabilities || [],
