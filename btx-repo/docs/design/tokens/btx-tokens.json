@@ -1,0 +1,135 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "meta": {
+    "version": "1.0.0",
+    "date": "2026-05-17",
+    "owner": "@design-lead",
+    "status": "active",
+    "scope": "BTX Citizen Portal — all surfaces"
+  },
+  "color": {
+    "brand": {
+      "primary":        { "$value": "#1A56DB", "$type": "color", "$description": "BTX blue — primary actions, links, focus rings" },
+      "primary-hover":  { "$value": "#1648C8", "$type": "color" },
+      "primary-active": { "$value": "#1240B5", "$type": "color" },
+      "secondary":      { "$value": "#0E9F6E", "$type": "color", "$description": "Trust green — success states, consent active badge" },
+      "secondary-hover":{ "$value": "#057A55", "$type": "color" }
+    },
+    "neutral": {
+      "0":   { "$value": "#FFFFFF", "$type": "color" },
+      "50":  { "$value": "#F9FAFB", "$type": "color" },
+      "100": { "$value": "#F3F4F6", "$type": "color" },
+      "200": { "$value": "#E5E7EB", "$type": "color" },
+      "400": { "$value": "#9CA3AF", "$type": "color" },
+      "600": { "$value": "#4B5563", "$type": "color" },
+      "700": { "$value": "#374151", "$type": "color" },
+      "900": { "$value": "#111827", "$type": "color" }
+    },
+    "semantic": {
+      "success":        { "$value": "{color.brand.secondary}", "$type": "color" },
+      "warning":        { "$value": "#F59E0B", "$type": "color" },
+      "danger":         { "$value": "#DC2626", "$type": "color" },
+      "info":           { "$value": "{color.brand.primary}", "$type": "color" },
+      "surface":        { "$value": "{color.neutral.0}", "$type": "color" },
+      "surface-raised": { "$value": "{color.neutral.50}", "$type": "color" },
+      "border":         { "$value": "{color.neutral.200}", "$type": "color" },
+      "text-primary":   { "$value": "{color.neutral.900}", "$type": "color" },
+      "text-secondary": { "$value": "{color.neutral.600}", "$type": "color" },
+      "text-disabled":  { "$value": "{color.neutral.400}", "$type": "color" }
+    },
+    "consent": {
+      "active":   { "$value": "{color.brand.secondary}", "$type": "color", "$description": "Consent status = active" },
+      "revoked":  { "$value": "{color.semantic.danger}",  "$type": "color", "$description": "Consent status = revoked" },
+      "expired":  { "$value": "{color.neutral.400}",      "$type": "color", "$description": "Consent status = expired" },
+      "pending":  { "$value": "{color.semantic.warning}", "$type": "color", "$description": "Consent awaiting user action" }
+    }
+  },
+  "typography": {
+    "family": {
+      "sans":  { "$value": "'Noto Sans', 'Inter', system-ui, sans-serif", "$type": "fontFamily", "$description": "Latin + Devanagari (Hindi/Marathi)" },
+      "mono":  { "$value": "'JetBrains Mono', 'Fira Code', monospace", "$type": "fontFamily" }
+    },
+    "size": {
+      "xs":   { "$value": "0.75rem",  "$type": "dimension" },
+      "sm":   { "$value": "0.875rem", "$type": "dimension" },
+      "base": { "$value": "1rem",     "$type": "dimension" },
+      "lg":   { "$value": "1.125rem", "$type": "dimension" },
+      "xl":   { "$value": "1.25rem",  "$type": "dimension" },
+      "2xl":  { "$value": "1.5rem",   "$type": "dimension" },
+      "3xl":  { "$value": "1.875rem", "$type": "dimension" }
+    },
+    "weight": {
+      "regular":  { "$value": "400", "$type": "fontWeight" },
+      "medium":   { "$value": "500", "$type": "fontWeight" },
+      "semibold": { "$value": "600", "$type": "fontWeight" },
+      "bold":     { "$value": "700", "$type": "fontWeight" }
+    },
+    "lineHeight": {
+      "tight":  { "$value": "1.25", "$type": "number" },
+      "normal": { "$value": "1.5",  "$type": "number" },
+      "loose":  { "$value": "1.75", "$type": "number" }
+    }
+  },
+  "spacing": {
+    "1":  { "$value": "0.25rem", "$type": "dimension" },
+    "2":  { "$value": "0.5rem",  "$type": "dimension" },
+    "3":  { "$value": "0.75rem", "$type": "dimension" },
+    "4":  { "$value": "1rem",    "$type": "dimension" },
+    "5":  { "$value": "1.25rem", "$type": "dimension" },
+    "6":  { "$value": "1.5rem",  "$type": "dimension" },
+    "8":  { "$value": "2rem",    "$type": "dimension" },
+    "10": { "$value": "2.5rem",  "$type": "dimension" },
+    "12": { "$value": "3rem",    "$type": "dimension" },
+    "16": { "$value": "4rem",    "$type": "dimension" }
+  },
+  "borderRadius": {
+    "sm":   { "$value": "0.25rem", "$type": "dimension" },
+    "md":   { "$value": "0.375rem","$type": "dimension" },
+    "lg":   { "$value": "0.5rem",  "$type": "dimension" },
+    "xl":   { "$value": "0.75rem", "$type": "dimension" },
+    "full": { "$value": "9999px",  "$type": "dimension" }
+  },
+  "shadow": {
+    "sm":  { "$value": "0 1px 2px 0 rgb(0 0 0 / 0.05)", "$type": "shadow" },
+    "md":  { "$value": "0 4px 6px -1px rgb(0 0 0 / 0.1)", "$type": "shadow" },
+    "lg":  { "$value": "0 10px 15px -3px rgb(0 0 0 / 0.1)", "$type": "shadow" }
+  },
+  "focus": {
+    "ring": { "$value": "0 0 0 3px rgba(26,86,219,0.45)", "$type": "shadow", "$description": "WCAG AA focus visible ring — 3:1 contrast ratio minimum" }
+  },
+  "animation": {
+    "duration": {
+      "fast":   { "$value": "150ms", "$type": "duration" },
+      "normal": { "$value": "250ms", "$type": "duration" },
+      "slow":   { "$value": "400ms", "$type": "duration" }
+    },
+    "easing": {
+      "default": { "$value": "cubic-bezier(0.4, 0, 0.2, 1)", "$type": "cubicBezier" },
+      "out":     { "$value": "cubic-bezier(0, 0, 0.2, 1)",   "$type": "cubicBezier" }
+    }
+  },
+  "component": {
+    "button": {
+      "height-md":     { "$value": "2.5rem", "$type": "dimension" },
+      "height-sm":     { "$value": "2rem",   "$type": "dimension" },
+      "padding-x-md":  { "$value": "{spacing.4}", "$type": "dimension" },
+      "border-radius": { "$value": "{borderRadius.md}", "$type": "dimension" },
+      "font-weight":   { "$value": "{typography.weight.semibold}", "$type": "fontWeight" }
+    },
+    "input": {
+      "height":        { "$value": "2.75rem", "$type": "dimension" },
+      "border-color":  { "$value": "{color.semantic.border}", "$type": "color" },
+      "border-radius": { "$value": "{borderRadius.md}", "$type": "dimension" }
+    },
+    "badge": {
+      "height":        { "$value": "1.25rem", "$type": "dimension" },
+      "border-radius": { "$value": "{borderRadius.full}", "$type": "dimension" },
+      "font-size":     { "$value": "{typography.size.xs}", "$type": "dimension" }
+    },
+    "consent-card": {
+      "border-radius": { "$value": "{borderRadius.lg}", "$type": "dimension" },
+      "shadow":        { "$value": "{shadow.sm}", "$type": "shadow" },
+      "padding":       { "$value": "{spacing.6}", "$type": "dimension" }
+    }
+  }
+}
