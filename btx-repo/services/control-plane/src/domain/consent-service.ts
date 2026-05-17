@@ -1,6 +1,9 @@
 import { Consent, ConsentGrant, ConsentRevoke, ConsentStatus, AuditEventType, AuditEvent, OutboxEvent } from '../domain/consent';
 import { ConsentsRepository, AuditRepository, OutboxRepository } from '../adapter/db/repository';
+import type { ObjectStoreAdapter } from '@btx/adapter-objectstore';
 import crypto from 'crypto';
+
+const AUDIT_ARCHIVE_BUCKET = process.env.AUDIT_ARCHIVE_BUCKET || 'btx-audit';
 
 /**
  * ConsentService: Business logic for consent lifecycle
@@ -11,8 +14,27 @@ export class ConsentService {
     private consentsRepo: ConsentsRepository,
     private auditRepo: AuditRepository,
     private outboxRepo: OutboxRepository,
-    private policyEvaluator?: (ruleId: string, context: Record<string, unknown>) => Promise<boolean>
+    private policyEvaluator?: (ruleId: string, context: Record<string, unknown>) => Promise<boolean>,
+    private objectStore?: ObjectStoreAdapter
   ) {}
+
+  /** Archive a single audit event to object store (fire-and-forget; never fails the caller). */
+  private archiveAuditEvent(
+    consentId: string,
+    eventType: string,
+    payload: Record<string, unknown>
+  ): void {
+    if (!this.objectStore) return;
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const key = `${consentId}/${ts}-${eventType}.json`;
+    const body = Buffer.from(JSON.stringify({ consentId, eventType, ts, payload }));
+    this.objectStore
+      .put(AUDIT_ARCHIVE_BUCKET, key, body, { contentType: 'application/json' })
+      .catch((err: unknown) => {
+        // Log but never propagate — archival must not affect consent state
+        console.error('[consent-service] audit archive failed', { key, err });
+      });
+  }
 
   /**
    * Grant new consent with policy evaluation
@@ -58,6 +80,13 @@ export class ConsentService {
         }
       }
     );
+
+    this.archiveAuditEvent(consent.id, AuditEventType.CONSENT_GRANTED, {
+      fromNodeId: grant.fromNodeId,
+      toNodeId: grant.toNodeId,
+      purpose: grant.purpose,
+      actorNodeId
+    });
 
     return consent;
   }
@@ -110,6 +139,13 @@ export class ConsentService {
         }
       }
     );
+
+    this.archiveAuditEvent(revoke.consentId, AuditEventType.CONSENT_REVOKED, {
+      actorNodeId,
+      reason: revoke.reason,
+      cascade: revoke.cascadeToFederation ?? false,
+      revokedAt: now.toISOString()
+    });
 
     return updated;
   }

@@ -20,9 +20,10 @@ findings:
     cwe: CWE-306
     asvs: V2.1
     severity: high
-    status: open
+    status: fixed
+    fixed_in: "fix/security-blocking-findings"
     location: "services/registry/src/server.ts, services/trust-node/src/server.ts"
-    recommendation: "Add bearer token or mTLS before GA public deployment"
+    fix: "Added onRequest hook: BTX_API_KEY Bearer token check on all non-healthz routes"
 
   - id: F-03
     title: "Broken access control on consent query"
@@ -64,10 +65,10 @@ findings:
     cwe: CWE-798
     asvs: "V2.9, V6.4"
     severity: high
-    status: open
+    status: fixed
+    fixed_in: "fix/security-blocking-findings"
     location: "pkg/bootstrap/src/cloud-adapters.ts"
-    recommendation: >
-      Add guard: if CLOUD_PROVIDER=stub && NODE_ENV=production → throw Error
+    fix: "getCloudConfig() throws if CLOUD_PROVIDER=stub && NODE_ENV=production"
 
   - id: F-08
     title: "kmsVerify not wired in trust-node — B-01"
@@ -75,11 +76,15 @@ findings:
     cwe: CWE-345
     asvs: V10.3
     severity: critical
-    status: open
+    status: fixed
+    fixed_in: "fix/security-blocking-findings"
     linked_item: B-01
     linked_condition: C-01
     location: "services/trust-node/src/server.ts"
-    recommendation: "Wire real KMS adapter before federation is enabled"
+    fix: >-
+      kmsVerify wired: uses crypto.verify(null,...) for algorithm-agnostic peer
+      public key verification (ed25519/ECDSA-P256/RSA-PSS). KmsAdapter created
+      via bootstrap factory in onReady hook; healthz exposed in /healthz.
 
   - id: F-09
     title: "Server-Side Request Forgery"

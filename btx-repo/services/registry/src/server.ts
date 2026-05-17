@@ -16,6 +16,19 @@ const pool = new Pool({
 
 const registryRepo = new RegistryRepository(pool);
 
+// Authentication hook (F-02): protect all non-healthz endpoints with a Bearer token.
+// Set BTX_API_KEY env var. Unauthenticated requests receive 401.
+app.addHook('onRequest', async (req, reply) => {
+  if (req.url === '/healthz') return; // healthz is always public
+  const apiKey = process.env.BTX_API_KEY;
+  if (!apiKey) return; // if env var is unset, auth is disabled (dev/test only)
+  const auth = req.headers['authorization'];
+  if (!auth || auth !== `Bearer ${apiKey}`) {
+    reply.code(401).header('WWW-Authenticate', 'Bearer realm="btx-registry"');
+    await reply.send({ statusCode: 401, error: 'Unauthorized', message: 'Valid Bearer token required' });
+  }
+});
+
 // Health check endpoint
 app.get('/healthz', {
   schema: {

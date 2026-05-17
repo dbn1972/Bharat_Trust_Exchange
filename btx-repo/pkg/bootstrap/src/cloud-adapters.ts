@@ -15,6 +15,15 @@ export interface CloudConfig {
 export async function getCloudConfig(): Promise<CloudConfig> {
   const provider = (process.env.CLOUD_PROVIDER || 'stub') as 'stub' | 'aws' | 'gcp' | 'azure';
 
+  // Security guard (F-07): refuse to run with stub KMS in production.
+  // This prevents accidental use of the hardcoded test key in live environments.
+  if (provider === 'stub' && process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'BTX bootstrap: CLOUD_PROVIDER=stub is not permitted when NODE_ENV=production. ' +
+      'Set CLOUD_PROVIDER to aws, gcp, or azure.'
+    );
+  }
+
   switch (provider) {
     case 'aws':
       return {

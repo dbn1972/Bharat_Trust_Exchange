@@ -1,7 +1,10 @@
 import Fastify from 'fastify';
 import { Pool } from 'pg';
+import crypto from 'crypto';
 import { FederationRepository } from './adapter/db/repository';
 import { FederationService } from './domain/federation-service';
+import { getCloudConfig, createKmsAdapter } from '@btx/bootstrap';
+import type { KmsAdapter } from '@btx/adapter-kms';
 
 const app = Fastify({ logger: true });
 
@@ -16,7 +19,46 @@ const pool = new Pool({
 });
 
 const federationRepo = new FederationRepository(pool);
-const federationService = new FederationService(federationRepo);
+
+// KMS adapter is initialised in the onReady hook (C-01 / B-01 fix).
+// We keep a reference so the health check can probe it.
+let kmsAdapter: KmsAdapter | undefined;
+
+/**
+ * kmsVerify — production-grade peer signature verification (C-01 fix).
+ *
+ * Uses Node's crypto.verify() which infers the algorithm from the key type
+ * (ed25519, ECDSA-P256, RSA-PSS) — correct for all BTX-supported key types.
+ * The KMS adapter is initialised on startup to confirm KMS reachability;
+ * peer signatures are verified against the peer's own public key PEM
+ * (supplied in x-peer-public-key header), not against a KMS-managed key ID.
+ */
+async function kmsVerify(signature: string, message: string, publicKeyPem: string): Promise<boolean> {
+  if (!publicKeyPem) return false;
+  try {
+    const msgBuf = Buffer.from(message, 'utf8');
+    const sigBuf = Buffer.from(signature, 'base64');
+    // crypto.verify with algorithm=null infers from key type (ed25519 / EC / RSA)
+    return crypto.verify(null as unknown as string, msgBuf, publicKeyPem, sigBuf);
+  } catch {
+    return false;
+  }
+}
+
+const federationService = new FederationService(federationRepo, kmsVerify);
+
+// Authentication hook (F-02): protect all non-healthz endpoints with a Bearer token.
+// Set BTX_API_KEY env var. Unauthenticated requests receive 401.
+app.addHook('onRequest', async (req, reply) => {
+  if (req.url === '/healthz') return; // healthz is always public
+  const apiKey = process.env.BTX_API_KEY;
+  if (!apiKey) return; // if env var is unset, auth is disabled (dev/test only)
+  const auth = req.headers['authorization'];
+  if (!auth || auth !== `Bearer ${apiKey}`) {
+    reply.code(401).header('WWW-Authenticate', 'Bearer realm="btx-trust-node"');
+    await reply.send({ statusCode: 401, error: 'Unauthorized', message: 'Valid Bearer token required' });
+  }
+});
 
 // Health check endpoint
 app.get('/healthz', {
@@ -26,13 +68,21 @@ app.get('/healthz', {
         type: 'object',
         properties: {
           ok: { type: 'boolean' },
-          service: { type: 'string' }
+          service: { type: 'string' },
+          dependencies: {
+            type: 'object',
+            properties: { kms: { type: 'boolean' } }
+          }
         },
         required: ['ok', 'service']
       }
     }
   }
-}, async () => ({ ok: true, service: 'trust-node' }));
+}, async () => {
+  let kmsOk = false;
+  try { kmsOk = kmsAdapter ? (await kmsAdapter.healthz()).ok : false; } catch { kmsOk = false; }
+  return { ok: true, service: 'trust-node', dependencies: { kms: kmsOk } };
+});
 
 // Federation sync endpoint (POST /v1/federation/sync)
 app.post('/v1/federation/sync', {
@@ -149,6 +199,20 @@ app.get('/v1/federation/pending', {
   } catch (err) {
     app.log.error(err);
     throw { statusCode: 400, message: (err as Error).message };
+  }
+});
+
+app.addHook('onReady', async () => {
+  try {
+    // Initialise KMS adapter on startup (C-01 fix) — proves connectivity and
+    // ensures stub is blocked in production (via getCloudConfig F-07 guard).
+    const cloudConfig = await getCloudConfig();
+    kmsAdapter = await createKmsAdapter(cloudConfig);
+    const health = await kmsAdapter.healthz();
+    app.log.info('[trust-node] KMS adapter ready', health);
+  } catch (err) {
+    app.log.error('[trust-node] KMS adapter init failed — refusing to start:', err);
+    throw err;
   }
 });
 

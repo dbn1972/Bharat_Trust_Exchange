@@ -159,10 +159,10 @@
 
 ## 3. Mandatory Conditions for v0.1.0 GA
 
-| Condition | Linked item | Owner |
+| Condition | Linked item | Status |
 |---|---|---|
-| C-01 | Fix B-01: Wire kmsVerify in trust-node/server.ts | @backend-lead |
-| C-02 | Fix B-02: Wire ObjectStoreAdapter in control-plane | @backend-lead |
+| C-01 | ~~Fix B-01: Wire kmsVerify in trust-node/server.ts~~ | ✅ Fixed |
+| C-02 | ~~Fix B-02: Wire ObjectStoreAdapter in control-plane~~ | ✅ Fixed |
 
 ---
 

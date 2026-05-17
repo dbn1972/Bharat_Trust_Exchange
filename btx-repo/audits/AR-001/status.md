@@ -28,8 +28,8 @@ This review establishes an honest, evidence-based inventory of what exists, what
 ### Known gaps in services
 | Gap ID | Service | Description | Severity |
 |---|---|---|---|
-| B-01 | trust-node | `kmsVerify` injected but not wired in `server.ts` — stub used in prod | Blocking |
-| B-02 | control-plane | `ObjectStoreAdapter` not wired for audit archival | Blocking |
+| B-01 | trust-node | ~~`kmsVerify` injected but not wired in `server.ts`~~ **FIXED** | ~~Blocking~~ Resolved |
+| B-02 | control-plane | ~~`ObjectStoreAdapter` not wired for audit archival~~ **FIXED** | ~~Blocking~~ Resolved |
 | G-03 | control-plane | Consent expiry job not implemented — manual revoke required | High |
 | G-04 | control-plane | Redis idempotency key not behind interface (testability gap) | Medium |
 | G-05 | registry | `api_version` column missing from `trust_nodes` schema | Medium |

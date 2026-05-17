@@ -4,6 +4,8 @@ import { ConsentsRepository, AuditRepository, OutboxRepository } from './adapter
 import { ConsentService } from './domain/consent-service';
 import { OutboxPublisher } from './adapter/kafka/outbox-publisher';
 import { ConsentStatus } from './domain/consent';
+import { getCloudConfig, createObjectStoreAdapter } from '@btx/bootstrap';
+import type { ObjectStoreAdapter } from '@btx/adapter-objectstore';
 
 const app = Fastify({ logger: true });
 
@@ -24,8 +26,12 @@ const consentsRepo = new ConsentsRepository(pool);
 const auditRepo = new AuditRepository(pool);
 const outboxRepo = new OutboxRepository(pool);
 
-// Initialize service
-const consentService = new ConsentService(consentsRepo, auditRepo, outboxRepo);
+// ObjectStoreAdapter is initialized on startup (onReady hook) and wired into ConsentService.
+// Declared here so the service can be rebuilt once the adapter is ready.
+let objectStore: ObjectStoreAdapter | undefined;
+
+// Initialize service (objectStore wired in onReady below)
+let consentService = new ConsentService(consentsRepo, auditRepo, outboxRepo);
 
 // Initialize outbox publisher
 const kafkaBrokers = (process.env.KAFKA_BROKERS || 'redpanda:9092').split(',');
@@ -218,12 +224,20 @@ app.get('/v1/consents/:consentId/audit', {
 // Startup and shutdown hooks
 app.addHook('onReady', async () => {
   try {
+    // Wire ObjectStoreAdapter for audit archival (C-02 / B-02)
+    const cloudConfig = await getCloudConfig();
+    objectStore = await createObjectStoreAdapter(cloudConfig);
+    const storeHealth = await objectStore.healthz();
+    app.log.info('[control-plane] ObjectStore ready', storeHealth);
+    // Rebuild ConsentService with the live adapter
+    consentService = new ConsentService(consentsRepo, auditRepo, outboxRepo, undefined, objectStore);
+
     // Start outbox publisher worker
     await outboxPublisher.connect();
     outboxPublisher.start(1000);
     app.log.info('[control-plane] Outbox publisher started');
   } catch (err) {
-    app.log.error('Failed to start outbox publisher:', err);
+    app.log.error('Failed to start control-plane services:', err);
     throw err;
   }
 });
