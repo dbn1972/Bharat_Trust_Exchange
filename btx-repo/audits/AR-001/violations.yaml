@@ -1,0 +1,66 @@
+---
+# BTX AR-001 Scalability Violations Register
+version: "1.0"
+date: "2026-05-17"
+
+violations:
+  - id: SV-01
+    title: "OutboxPublisher not singleton — DB connections at scale"
+    severity: medium
+    component: services/control-plane/src/adapter/kafka/outbox-publisher.ts
+    description: >
+      OutboxPublisher should run as a single instance per deployment, not per pod.
+      At 10+ pods each running an OutboxPublisher, DB connections could exhaust PgBouncer pool.
+    recommendation: "Extract OutboxPublisher to a dedicated worker deployment (1 replica)"
+    target_version: v1.0
+
+  - id: SV-02
+    title: "Redis failure mode unknown — idempotency not interfaced"
+    severity: medium
+    component: services/control-plane/src/domain/consent-service.ts
+    description: >
+      Redis idempotency key is not behind an interface. If Redis is unavailable,
+      the fail path is not tested or defined.
+    recommendation: "Wrap Redis in an IdempotencyStore interface; implement fail-open with log warning"
+    linked_gap: G-04
+    target_version: v0.1.1
+
+  - id: SV-03
+    title: "Outbox poller has no back-pressure"
+    severity: medium
+    component: services/control-plane/src/adapter/kafka/outbox-publisher.ts
+    description: >
+      Outbox publisher polls at a fixed interval with no batch size cap or
+      back-pressure mechanism. Under high load, rows accumulate unboundedly.
+    recommendation: "Add configurable batch size; add Prometheus alert outbox_lag > 1000"
+    target_version: v0.2.0
+
+  - id: SV-04
+    title: "Kafka topics created with default 1 partition"
+    severity: low
+    component: "kafka topic configuration (not in codebase)"
+    description: >
+      1 partition limits consumer parallelism. At 10K+ grants/day, this may
+      become a consumer throughput bottleneck.
+    recommendation: "Set partition count to 6 per topic before 10K grants/day"
+    target_version: v0.2.0
+
+  - id: SV-05
+    title: "HPA trigger CPU-only; poor proxy for I/O-bound service"
+    severity: medium
+    component: "k8s HPA configuration (not yet in repo)"
+    description: >
+      CPU-based HPA scaling lags behind actual request load for I/O-bound services.
+      Kafka consumer lag or Prometheus req/s is a better autoscaling signal.
+    recommendation: "Add KEDA triggers for Kafka consumer lag and HTTP RPS alongside CPU"
+    target_version: v0.2.0
+
+  - id: SV-06
+    title: "Revocation fan-out unbounded at v1.0 scale"
+    severity: low
+    component: services/control-plane/src/domain/consent-service.ts::revoke
+    description: >
+      A single revocation event fans out to all downstream consumers. At v1.0
+      scale (millions of grants), this could generate millions of downstream messages.
+    recommendation: "Design and implement a fan-out budget limit before v1.0 launch"
+    target_version: v1.0

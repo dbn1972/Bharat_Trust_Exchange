@@ -1,0 +1,5 @@
+prompt: P-27
+status: PASS
+summary: Structural consistency achieved across API, policy, adapter, and audit package layers.
+findings:
+  - Outbox and idempotency contracts represented but not fully integration-tested with live brokers

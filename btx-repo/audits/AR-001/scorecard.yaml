@@ -1,0 +1,89 @@
+---
+# BTX AR-001 Release Readiness Scorecard
+version: "1.0"
+release: "v0.1.0"
+date: "2026-05-17"
+gate: "conditional-go"
+overall_score: 3.26
+gate_threshold: 3.0
+
+axes:
+  - id: 1
+    name: functional_completeness
+    weight: 0.20
+    score: 3
+    weighted_score: 0.60
+    status: conditional
+    blocking_items: [B-01, B-02]
+
+  - id: 2
+    name: security_posture
+    weight: 0.20
+    score: 3
+    weighted_score: 0.60
+    status: conditional
+    blocking_items: [B-01]
+
+  - id: 3
+    name: privacy_compliance_dpdp
+    weight: 0.15
+    score: 4
+    weighted_score: 0.60
+    status: pass
+
+  - id: 4
+    name: operational_readiness
+    weight: 0.15
+    score: 3
+    weighted_score: 0.45
+    status: conditional
+
+  - id: 5
+    name: test_coverage
+    weight: 0.10
+    score: 3
+    weighted_score: 0.30
+    status: conditional
+
+  - id: 6
+    name: performance
+    weight: 0.05
+    score: 3
+    weighted_score: 0.15
+    status: conditional
+
+  - id: 7
+    name: portability_cloud_agnosticism
+    weight: 0.05
+    score: 4
+    weighted_score: 0.20
+    status: pass
+
+  - id: 8
+    name: documentation_completeness
+    weight: 0.05
+    score: 4
+    weighted_score: 0.20
+    status: pass
+
+  - id: 9
+    name: release_engineering
+    weight: 0.03
+    score: 4
+    weighted_score: 0.12
+    status: pass
+
+  - id: 10
+    name: ux_readiness
+    weight: 0.02
+    score: 2
+    weighted_score: 0.04
+    status: at_risk
+
+conditions:
+  - id: C-01
+    description: "Wire kmsVerify in trust-node/server.ts (fix B-01)"
+    must_fix_before_ga: true
+  - id: C-02
+    description: "Wire ObjectStoreAdapter in control-plane (fix B-02)"
+    must_fix_before_ga: true

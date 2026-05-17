@@ -1,0 +1,6 @@
+image:
+  repository: btx/trust-node
+  tag: latest
+service:
+  port: 3003
+resources: {}

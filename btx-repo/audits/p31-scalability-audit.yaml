@@ -1,0 +1,8 @@
+prompt: P-31
+status: PASS-EXPECTED
+notes:
+  - stack includes pgbouncer transaction pooling
+  - kafka + outbox boundary declared
+  - redis cache/idempotency primitives included
+pending:
+  - k6 evidence and saturation curves

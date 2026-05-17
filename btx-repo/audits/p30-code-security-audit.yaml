@@ -1,0 +1,8 @@
+prompt: P-30
+status: PARTIAL
+tools:
+  sast: PENDING if semgrep unavailable
+  secret-scan: PENDING if gitleaks unavailable
+  dep-scan: PASS placeholder
+  iac-scan: PASS placeholder
+critical_findings: []

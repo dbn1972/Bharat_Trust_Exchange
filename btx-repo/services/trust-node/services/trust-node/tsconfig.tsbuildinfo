@@ -1,0 +1,1 @@
+{"root":["../../src/server.ts","../../src/__tests__/federation-service.test.ts","../../src/adapter/db/repository.ts","../../src/domain/federation-service.ts","../../src/domain/federation.ts","../../tests/integration/federation-sync.test.ts","../../tests/unit/health.test.ts"],"errors":true,"version":"5.9.3"}

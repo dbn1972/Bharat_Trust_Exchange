@@ -1,0 +1,26 @@
+{
+  "cases": [
+    {
+      "ruleId": "consent.grant",
+      "ctx": {
+        "subject": { "loa": "high" },
+        "request": { "scope": ["consent:write"] }
+      },
+      "expect": "allow"
+    },
+    {
+      "ruleId": "consent.revoke",
+      "ctx": {
+        "request": { "scope": ["consent:write"] }
+      },
+      "expect": "allow"
+    },
+    {
+      "ruleId": "share.create",
+      "ctx": {
+        "request": { "hasValidConsent": false }
+      },
+      "expect": "deny"
+    }
+  ]
+}

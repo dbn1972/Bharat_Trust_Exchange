@@ -1,0 +1,27 @@
+REQ_ID,REQ_DESCRIPTION,SCREEN,API_ENDPOINT,SERVICE,TEST,ADR
+FR-01,Citizen can grant consent to a data principal for a specific purpose,portal/consent/grant (W-01..W-04),POST /v1/consents,control-plane/consent-service.ts::grant,consent-service.test.ts::grant happy path,ADR-0020
+FR-02,Citizen must give explicit voluntary consent before data access,portal/consent/grant (W-03 checkbox),POST /v1/consents (explicitConsent field),control-plane/consent-service.ts::grant,consent-api-negative.test.ts::missing caller 403,ADR-0020
+FR-03,Citizen can revoke consent at any time,portal/my-consents (revoke button),POST /v1/consents/:id/revoke,control-plane/consent-service.ts::revoke,consent-service.test.ts::revoke happy path,ADR-0020
+FR-04,Consent revocation cascades to all connected services,—,POST /v1/consents/:id/revoke,control-plane/consent-service.ts::revoke (outbox event),chaos/GD-01,ADR-0021
+FR-05,Citizen can view their full consent history,portal/my-consents (history tab),GET /v1/consents/:id/audit,control-plane/consent-service.ts::getAuditTrail,consent-service.test.ts::audit trail,ADR-0020
+FR-06,Citizen can export consent data,—,GET /v1/consents/:id (+ objectstore),control-plane (B-02 pending),—,ADR-0025
+FR-07,Trust node can register with the registry,—,POST /v1/nodes,registry/registry-repository.ts::register,— (no test yet),ADR-0020
+FR-08,Trust nodes can federate consent state via signed sync,—,POST /v1/federation/sync,trust-node/federation-service.ts::handleSync,— (no test yet),ADR-0020
+FR-09,Consent policy must be evaluated before any grant or revoke,—,POST /v1/consents,control-plane/consent-service.ts (policyEvaluator call),consent-service.test.ts::policy denied,ADR-0004
+FR-10,System must fail-closed on policy evaluator error,—,POST /v1/consents,control-plane/consent-service.ts (fail-closed),consent-service.test.ts::policy error fail-closed,ADR-0004
+NFR-01,Consent API p99 latency < 80ms under normal load,—,POST /v1/consents,—,tests/perf-consent-lifecycle.k6.js threshold,ADR-0020
+NFR-02,Federation sync p99 < 1500ms,—,POST /v1/federation/sync,—,tests/perf-federation-sync.k6.js threshold,ADR-0020
+NFR-03,All personal data stored only within India,—,All,bootstrap/cloud-adapters.ts::ResidencyViolationError,—,ADR-0025
+NFR-04,Audit log is tamper-evident (Merkle root),—,GET /v1/consents/:id/audit,control-plane/audit-repository.ts,consent-service.test.ts::audit trail returns entries,ADR-0020
+NFR-05,Zero cloud SDK leakage in service layer,—,All,All services,MIGRATION.md,ADR-0023
+PRIV-01,Data minimisation — only declared fields collected,portal/consent-grant (data fields list),POST /v1/consents,consent-service (dataFields stored as-is from input),consent-service.test.ts::no PII in outbox,DPIA §4
+PRIV-02,Retention — personal data deleted/archived per retention schedule,—,—,objectstore adapter (B-02 pending),—,DPIA §7
+PRIV-03,Citizen has right to access their data,portal/my-consents,GET /v1/consents/:id,consent-service.ts::query,consent-service.test.ts::query own node,DPIA §8
+PRIV-04,Citizen has right to correct — revoke and re-grant,portal/my-consents,POST /v1/consents/:id/revoke + POST /v1/consents,consent-service.ts::revoke + grant,consent-service.test.ts,DPIA §8
+PRIV-05,Citizen has right to erasure — consent deleted on revoke + retention expiry,—,POST /v1/consents/:id/revoke,consent-service.ts::revoke,—,DPIA §8
+PRIV-06,Breach notified to DPBI within 72h,docs/runbooks/incidents/data-breach-response.md (IR-001),—,—,—,DPDP §8
+SEC-01,All federation syncs validated with KMS signature,—,POST /v1/federation/sync,federation-service.ts::verifySyncSignature,— (B-01 blocking),threat-model T-05
+SEC-02,Fail-closed: PDP error → deny,—,POST /v1/consents,consent-service.ts (fail-closed),consent-service.test.ts::policy error fail-closed,ADR-0004
+SEC-03,Outbox payload contains no PII,—,POST /v1/consents,consent-service.ts (appendInTransaction),consent-service.test.ts::no PII in outbox,ADR-0021
+SEC-04,SBOM generated per service at release,—,—,—,.github/workflows/release.yml (Syft),ADR-0020
+SEC-05,Artefacts signed with Cosign keyless (SLSA L3),—,—,—,.github/workflows/release.yml,ADR-0020

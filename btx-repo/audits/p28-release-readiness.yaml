@@ -1,0 +1,5 @@
+prompt: P-28
+verdict: NO-GO-FOR-BETA_GO-FOR-INTERNAL-DEMO
+reason:
+  - architecture baseline complete
+  - production-hardening and depth tests pending

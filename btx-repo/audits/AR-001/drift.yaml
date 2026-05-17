@@ -1,0 +1,50 @@
+---
+# BTX AR-001 Drift Register
+version: "1.0"
+date: "2026-05-17"
+
+drift:
+  - id: DFT-01
+    severity: medium
+    layer_pair: "domain ↔ db ↔ api (registry)"
+    field: api_version
+    description: >
+      api_version field referenced in ADR-0024 does not exist in trust_nodes
+      schema, TrustNode domain type, or API request/response.
+    linked_gap: G-05
+    linked_adr: ADR-0024
+    status: open
+
+  - id: DFT-02
+    severity: blocking
+    layer_pair: "service ↔ transport (trust-node)"
+    field: kmsVerify
+    description: >
+      kmsVerify is injected as a DI parameter in FederationService but
+      trust-node/server.ts does not pass the real KMS adapter — stub is used
+      in all environments including prod.
+    linked_gap: B-01
+    linked_cr: CR-001
+    status: open
+
+  - id: DFT-03
+    severity: blocking
+    layer_pair: "service ↔ transport (control-plane)"
+    field: ObjectStoreAdapter
+    description: >
+      ObjectStoreAdapter is implemented and tested but ConsentService/server.ts
+      does not wire it for audit event archival. Archival silently does not happen.
+    linked_gap: B-02
+    linked_cr: CR-001
+    status: open
+
+  - id: DFT-04
+    severity: low
+    layer_pair: "ADR-0024 ↔ server.ts (all services)"
+    field: Sunset header
+    description: >
+      ADR-0024 requires a Sunset response header (RFC 8594) on all API responses
+      to communicate deprecation timelines. No service currently emits this header.
+    linked_adr: ADR-0024
+    status: open
+    note: "Acceptable for v0.1.0 — no deprecated routes yet. Must be implemented before any route is sunset."

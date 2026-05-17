@@ -1,21 +1,176 @@
-// AWS KMS adapter — skeleton. v1 is stub-only (ADR-0023). Real adapter is
-// wired during the per-cloud certification job (CT-CLOUD-AWS-*). Until then
-// every method throws KmsError('not_implemented').
-import type { KmsAdapter } from './index.js';
+/**
+ * AWS KMS adapter implementation
+ * Uses AWS SDK v3 for KMS operations: DEK generation, signing, verification
+ */
+import type { KmsAdapter, DataKey, SignResult } from './index.js';
 import { KmsError } from './index.js';
 
 export interface AwsKmsConfig {
   region: string;
   signingKeyArn: string;
   encryptKeyArn: string;
-  // intentionally do not import @aws-sdk here; injected at runtime
-  client?: unknown;
+  // AWS SDK client injected at runtime to avoid hard dependency
+  client?: any;
 }
 
-export function createAwsKms(_cfg: AwsKmsConfig): KmsAdapter {
-  const ni = () => { throw new KmsError('not_implemented', 'aws kms adapter pending CT-CLOUD-AWS pass'); };
+export function createAwsKms(cfg: AwsKmsConfig): KmsAdapter {
+  // Lazy-load AWS SDK to allow optional dependency
+  let client = cfg.client;
+
+  async function getClient() {
+    if (!client) {
+      try {
+        const { KMSClient } = await import('@aws-sdk/client-kms');
+        client = new KMSClient({ region: cfg.region });
+      } catch (err) {
+        throw new KmsError('provider_error', 'AWS SDK not available', err);
+      }
+    }
+    return client;
+  }
+
   return {
-    generateDataKey: ni, decryptDataKey: ni, sign: ni, verify: ni, publicKeyPem: ni,
-    healthz: async () => ({ ok: false, provider: 'aws' })
+    async generateDataKey(keyId: string, opts?: { bits?: 128 | 192 | 256; aad?: string }): Promise<DataKey> {
+      try {
+        const kms = await getClient();
+        const { GenerateDataKeyCommand } = await import('@aws-sdk/client-kms');
+
+        const bits = (opts?.bits ?? 256) as 128 | 192 | 256;
+        const cmd = new GenerateDataKeyCommand({
+          KeyId: keyId,
+          KeySpec: bits === 256 ? 'AES_256' : bits === 192 ? 'AES_192' : 'AES_128',
+          EncryptionContext: opts?.aad ? { aad: opts.aad } : undefined
+        });
+
+        const result = await kms.send(cmd);
+
+        if (!result.Plaintext || !result.CiphertextBlob) {
+          throw new KmsError('provider_error', 'AWS returned empty plaintext/ciphertext');
+        }
+
+        return {
+          plaintext: new Uint8Array(result.Plaintext),
+          ciphertext: new Uint8Array(result.CiphertextBlob),
+          keyId: result.KeyId || keyId,
+          keyVersion: 1,
+          algo: 'AES-256-GCM'
+        };
+      } catch (err) {
+        if (err instanceof KmsError) throw err;
+        throw new KmsError('provider_error', `generateDataKey failed: ${String(err)}`, err);
+      }
+    },
+
+    async decryptDataKey(keyId: string, ciphertext: Uint8Array, aad?: string): Promise<Uint8Array> {
+      try {
+        const kms = await getClient();
+        const { DecryptCommand } = await import('@aws-sdk/client-kms');
+
+        const cmd = new DecryptCommand({
+          CiphertextBlob: ciphertext,
+          KeyId: keyId,
+          EncryptionContext: aad ? { aad } : undefined
+        });
+
+        const result = await kms.send(cmd);
+
+        if (!result.Plaintext) {
+          throw new KmsError('provider_error', 'AWS returned empty plaintext');
+        }
+
+        return new Uint8Array(result.Plaintext);
+      } catch (err) {
+        if (err instanceof KmsError) throw err;
+        throw new KmsError('provider_error', `decryptDataKey failed: ${String(err)}`, err);
+      }
+    },
+
+    async sign(keyId: string, message: Uint8Array): Promise<SignResult> {
+      try {
+        const kms = await getClient();
+        const { SignCommand } = await import('@aws-sdk/client-kms');
+
+        const cmd = new SignCommand({
+          KeyId: keyId === 'signing' ? cfg.signingKeyArn : keyId,
+          Message: message,
+          SigningAlgorithm: 'ECDSA_SHA_256'
+        });
+
+        const result = await kms.send(cmd);
+
+        if (!result.Signature) {
+          throw new KmsError('provider_error', 'AWS returned empty signature');
+        }
+
+        return {
+          signature: new Uint8Array(result.Signature),
+          keyId: result.KeyId || keyId,
+          keyVersion: 1,
+          algo: 'ecdsa-p256-sha256'
+        };
+      } catch (err) {
+        if (err instanceof KmsError) throw err;
+        throw new KmsError('provider_error', `sign failed: ${String(err)}`, err);
+      }
+    },
+
+    async verify(keyId: string, message: Uint8Array, signature: Uint8Array): Promise<boolean> {
+      try {
+        const kms = await getClient();
+        const { VerifyCommand } = await import('@aws-sdk/client-kms');
+
+        const cmd = new VerifyCommand({
+          KeyId: keyId === 'signing' ? cfg.signingKeyArn : keyId,
+          Message: message,
+          Signature: signature,
+          SigningAlgorithm: 'ECDSA_SHA_256'
+        });
+
+        const result = await kms.send(cmd);
+        return result.SignatureValid ?? false;
+      } catch (err) {
+        if (err instanceof KmsError) throw err;
+        throw new KmsError('provider_error', `verify failed: ${String(err)}`, err);
+      }
+    },
+
+    async publicKeyPem(keyId: string): Promise<string> {
+      try {
+        const kms = await getClient();
+        const { GetPublicKeyCommand } = await import('@aws-sdk/client-kms');
+
+        const cmd = new GetPublicKeyCommand({
+          KeyId: keyId === 'signing' ? cfg.signingKeyArn : keyId
+        });
+
+        const result = await kms.send(cmd);
+
+        if (!result.PublicKey) {
+          throw new KmsError('provider_error', 'AWS returned empty public key');
+        }
+
+        // AWS returns DER-encoded public key; convert to PEM
+        const derBuffer = Buffer.from(result.PublicKey);
+        const base64 = derBuffer.toString('base64');
+        const pem = `-----BEGIN PUBLIC KEY-----\n${base64.match(/.{1,64}/g)?.join('\n')}\n-----END PUBLIC KEY-----`;
+        return pem;
+      } catch (err) {
+        if (err instanceof KmsError) throw err;
+        throw new KmsError('provider_error', `publicKeyPem failed: ${String(err)}`, err);
+      }
+    },
+
+    async healthz(): Promise<{ ok: boolean; provider: string }> {
+      try {
+        const kms = await getClient();
+        const { DescribeKeyCommand } = await import('@aws-sdk/client-kms');
+
+        const cmd = new DescribeKeyCommand({ KeyId: cfg.signingKeyArn });
+        await kms.send(cmd);
+        return { ok: true, provider: 'aws' };
+      } catch {
+        return { ok: false, provider: 'aws' };
+      }
+    }
   };
 }

@@ -1,0 +1,6 @@
+image:
+  repository: btx/control-plane
+  tag: latest
+service:
+  port: 3002
+resources: {}

@@ -1,0 +1,16 @@
+{
+  "name": "@btx/trust-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^4.27.0",
+    "@btx/audit": "workspace:*",
+    "@btx/adapter-kms": "workspace:*",
+    "@btx/otel": "workspace:*"
+  }
+}

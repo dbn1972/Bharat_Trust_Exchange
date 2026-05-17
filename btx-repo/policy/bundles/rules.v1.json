@@ -1,0 +1,45 @@
+{
+  "bundleId": "btx-policy-v1",
+  "issuedAt": "2026-05-17T00:00:00Z",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "id": "consent.grant",
+      "effect": "allow",
+      "when": {
+        "all": [
+          { "path": "subject.loa", "op": "in", "value": ["substantial", "high"] },
+          { "path": "request.scope", "op": "contains", "value": "consent:write" }
+        ]
+      },
+      "obligations": {
+        "audit": true,
+        "retentionDays": 365
+      }
+    },
+    {
+      "id": "consent.revoke",
+      "effect": "allow",
+      "when": {
+        "all": [
+          { "path": "request.scope", "op": "contains", "value": "consent:write" }
+        ]
+      },
+      "obligations": {
+        "audit": true
+      }
+    },
+    {
+      "id": "share.create",
+      "effect": "deny",
+      "when": {
+        "all": [
+          { "path": "request.hasValidConsent", "op": "eq", "value": false }
+        ]
+      },
+      "obligations": {
+        "reason": "missing-valid-consent"
+      }
+    }
+  ]
+}

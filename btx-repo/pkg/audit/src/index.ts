@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+export { auditAppendedSchema } from './schemas.js';
 
 export interface AuditEvent {
   event_id: string;

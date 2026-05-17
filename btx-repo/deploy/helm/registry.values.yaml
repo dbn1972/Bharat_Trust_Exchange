@@ -1,0 +1,6 @@
+image:
+  repository: btx/registry
+  tag: latest
+service:
+  port: 3001
+resources: {}
