@@ -19,7 +19,16 @@ import type { FastifyInstance } from 'fastify';
 // We test the route validation layer (JSON Schema) not the DB layer.
 
 async function buildApp(): Promise<FastifyInstance> {
-  const app = Fastify({ logger: false });
+  const app = Fastify({
+    logger: false,
+    ajv: {
+      customOptions: {
+        // Reject requests with additional properties instead of silently stripping them
+        removeAdditional: false,
+        allErrors: true,
+      },
+    },
+  });
 
   // Consent grant route — validates JSON schema
   app.post('/v1/consents', {

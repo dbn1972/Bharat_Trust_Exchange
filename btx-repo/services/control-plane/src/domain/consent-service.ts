@@ -75,8 +75,8 @@ export class ConsentService {
           consentId: consent.id,
           fromNodeId: grant.fromNodeId,
           toNodeId: grant.toNodeId,
-          subjectRef: grant.subjectRef,
           purpose: grant.purpose
+          // subjectRef intentionally omitted: PII must not appear in outbox
         }
       }
     );
@@ -161,7 +161,7 @@ export class ConsentService {
 
     // Authorization: requestor must be from or to node
     if (consent.fromNodeId !== requestorNodeId && consent.toNodeId !== requestorNodeId) {
-      throw new Error('Unauthorized: cannot query this consent');
+      throw new Error('Not authorized: cannot query this consent');
     }
 
     // Emit audit event (query is not state-changing, so no outbox)

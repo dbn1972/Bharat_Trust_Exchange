@@ -66,8 +66,7 @@ export class ConsentExpiryJob {
 
         for (const row of result.rows) {
           try {
-            await this.expireOne(row.id);
-            expired++;
+            if (await this.expireOne(row.id)) expired++;
           } catch (err) {
             console.error('[expiry-job] failed to expire consent', { id: row.id, err });
           }
@@ -81,9 +80,9 @@ export class ConsentExpiryJob {
     return { expired };
   }
 
-  private async expireOne(consentId: string): Promise<void> {
+  private async expireOne(consentId: string): Promise<boolean> {
     const consent = await this.consentsRepo.getById(consentId);
-    if (!consent || consent.status !== ConsentStatus.ACTIVE) return; // already changed
+    if (!consent || consent.status !== ConsentStatus.ACTIVE) return false; // already changed
 
     await this.consentsRepo.updateStatus(consentId, ConsentStatus.EXPIRED);
 
@@ -107,5 +106,6 @@ export class ConsentExpiryJob {
         }
       }
     );
+    return true;
   }
 }

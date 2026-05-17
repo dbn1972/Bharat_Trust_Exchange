@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * P-19 Test Backfill — ConsentService unit tests
  *
@@ -48,24 +49,24 @@ function makeRepos(consent = makeConsent()) {
   let storedConsent = { ...consent };
 
   const consentsRepo: Partial<ConsentsRepository> = {
-    create: jest.fn(async (grant) => ({ ...storedConsent, ...grant, id: 'consent-new-001', status: ConsentStatus.ACTIVE, grantedAt: new Date() })),
-    getById: jest.fn(async (id) => id === storedConsent.id ? storedConsent : null),
-    revoke: jest.fn(async (id, _reason) => {
-      storedConsent = { ...storedConsent, status: ConsentStatus.REVOKED, revokedAt: new Date() };
+    create: vi.fn(async (grant) => ({ ...storedConsent, ...grant, id: 'consent-new-001', status: ConsentStatus.ACTIVE, grantedAt: new Date() })),
+    getById: vi.fn(async (id) => id === storedConsent.id ? storedConsent : null),
+    updateStatus: vi.fn(async (_id: string, status: ConsentStatus, revokedAt?: Date) => {
+      storedConsent = { ...storedConsent, status, revokedAt: revokedAt ?? storedConsent.revokedAt };
       return storedConsent;
     }),
   };
 
   const auditRepo: Partial<AuditRepository> = {
-    appendInTransaction: jest.fn(async (event: MockAuditCall, outbox) => {
+    appendInTransaction: vi.fn(async (event: MockAuditCall, outbox) => {
       auditCalls.push(event);
       outboxCalls.push(outbox);
     }),
-    getByConsentId: jest.fn(async () => auditCalls),
+    getByConsentId: vi.fn(async () => auditCalls),
   };
 
   const outboxRepo: Partial<OutboxRepository> = {
-    create: jest.fn(async () => ({ id: 'outbox-001' })),
+    create: vi.fn(async () => ({ id: 'outbox-001' })),
   };
 
   return {
@@ -162,7 +163,7 @@ describe('ConsentService', () => {
 
     it('throws when consent does not exist', async () => {
       const { consentsRepo, auditRepo, outboxRepo } = makeRepos();
-      (consentsRepo.getById as jest.Mock).mockResolvedValueOnce(null);
+      (consentsRepo.getById as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
       const svc = new ConsentService(consentsRepo, auditRepo, outboxRepo);
 
       await expect(svc.revoke({ consentId: 'non-existent', reason: 'test' }, ACTOR))
@@ -175,7 +176,7 @@ describe('ConsentService', () => {
 
       await expect(svc.revoke({ consentId: 'consent-test-001', reason: 'test' }, ACTOR))
         .rejects.toThrow('Policy denied: consent.revoke');
-      expect(consentsRepo.revoke).not.toHaveBeenCalled();
+      expect(consentsRepo.updateStatus).not.toHaveBeenCalled();
     });
 
     it('allows re-revoke of already-revoked consent without error (idempotent)', async () => {
@@ -218,7 +219,7 @@ describe('ConsentService', () => {
 
     it('returns null when consent does not exist', async () => {
       const { consentsRepo, auditRepo, outboxRepo } = makeRepos();
-      (consentsRepo.getById as jest.Mock).mockResolvedValueOnce(null);
+      (consentsRepo.getById as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
       const svc = new ConsentService(consentsRepo, auditRepo, outboxRepo);
 
       await expect(svc.query('not-found', 'node-a')).rejects.toThrow();

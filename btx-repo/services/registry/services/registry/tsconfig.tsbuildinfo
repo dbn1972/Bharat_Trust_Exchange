@@ -1,0 +1,1 @@
+{"root":["../../src/server.ts","../../src/__tests__/registry-repository.test.ts","../../src/adapter/db/repository.ts","../../src/domain/trust-node.ts","../../tests/integration/placeholder.test.ts","../../tests/unit/health.test.ts"],"errors":true,"version":"5.9.3"}

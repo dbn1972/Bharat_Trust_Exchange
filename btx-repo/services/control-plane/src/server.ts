@@ -122,7 +122,8 @@ app.post('/v1/consents', {
         obligations: { type: 'object' },
         expiresAt: { type: 'string', format: 'date-time' }
       },
-      required: ['fromNodeId', 'toNodeId', 'subjectRef', 'purpose']
+      required: ['fromNodeId', 'toNodeId', 'subjectRef', 'purpose'],
+      additionalProperties: false
     },
     response: {
       201: {

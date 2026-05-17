@@ -1,14 +1,15 @@
+import { vi } from 'vitest';
 /**
  * Unit tests: RegistryRepository (services/registry)
  *
- * All DB calls are mocked via jest.fn() so no real Postgres is needed.
+ * All DB calls are mocked via vi.fn() so no real Postgres is needed.
  */
 
 import { RegistryRepository } from '../adapter/db/repository';
 import type { Pool } from 'pg';
 
 // ---------- mock pool factory ----------
-const mockQuery = jest.fn();
+const mockQuery = vi.fn();
 const mockPool = { query: mockQuery } as unknown as Pool;
 
 // ---------- helpers ----------
@@ -32,7 +33,7 @@ describe('RegistryRepository', () => {
   let repo: RegistryRepository;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     repo = new RegistryRepository(mockPool);
   });
 

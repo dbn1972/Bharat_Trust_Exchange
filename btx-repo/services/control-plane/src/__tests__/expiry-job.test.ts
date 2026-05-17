@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Unit tests: ConsentExpiryJob (services/control-plane)
  */
@@ -7,11 +8,11 @@ import { ConsentStatus, AuditEventType } from '../domain/consent';
 import type { Pool } from 'pg';
 
 // ---------- mocks ----------
-const mockQuery = jest.fn();
+const mockQuery = vi.fn();
 const mockPool = { query: mockQuery } as unknown as Pool;
 
-const mockConsentsRepo = { getById: jest.fn(), updateStatus: jest.fn() } as any;
-const mockAuditRepo = { appendInTransaction: jest.fn() } as any;
+const mockConsentsRepo = { getById: vi.fn(), updateStatus: vi.fn() } as any;
+const mockAuditRepo = { appendInTransaction: vi.fn() } as any;
 const mockOutboxRepo = {} as any;
 
 const makeConsent = (id: string) => ({
@@ -31,7 +32,7 @@ describe('ConsentExpiryJob', () => {
   let job: ConsentExpiryJob;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     job = new ConsentExpiryJob(mockPool, mockConsentsRepo, mockAuditRepo, mockOutboxRepo, 60_000);
   });
 
