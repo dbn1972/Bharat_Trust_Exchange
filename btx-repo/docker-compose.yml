@@ -24,7 +24,7 @@ services:
       - ./docker/postgres/initdb.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.22.0
+    image: edoburu/pgbouncer:latest
     environment:
       DB_USER: btx
       DB_PASSWORD: btx
@@ -43,7 +43,7 @@ services:
       test: ["CMD-SHELL", "nc -z localhost 5432 || exit 1"]
 
   redpanda:
-    image: redpandadata/redpanda:v24.1.7
+    image: redpandadata/redpanda:v24.2.18
     command:
       - redpanda
       - start
@@ -60,7 +60,7 @@ services:
       - "9644:9644"     # admin
     healthcheck:
       <<: *hc
-      test: ["CMD-SHELL", "rpk cluster health -X brokers=localhost:9092 | grep -q 'Healthy: true'"]
+      test: ["CMD-SHELL", "rpk cluster health -X brokers=localhost:9092 | grep -q 'Healthy'"]
 
   redis:
     image: redis:7-alpine
@@ -72,7 +72,7 @@ services:
       test: ["CMD", "redis-cli", "ping"]
 
   minio:
-    image: minio/minio:RELEASE.2024-03-15T01-07-19Z
+    image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: btxadmin
