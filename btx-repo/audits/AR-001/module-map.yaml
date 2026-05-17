@@ -1,0 +1,114 @@
+---
+# BTX AR-001 Module Interaction Map
+version: "1.0"
+date: "2026-05-17"
+
+modules:
+  - id: portal
+    type: frontend
+    path: apps/portal
+    outbound:
+      - target: control-plane
+        protocol: HTTP/REST
+        endpoints: [POST /v1/consents, POST /v1/consents/:id/revoke, GET /v1/consents/:id, GET /v1/consents/:id/audit]
+
+  - id: control-plane
+    type: service
+    path: services/control-plane
+    port: 3002
+    inbound:
+      - source: portal
+      - source: trust-node  # federation sync consent data
+    outbound:
+      - target: postgres
+        protocol: TCP/SQL
+        pool: pgbouncer
+      - target: redis
+        protocol: TCP/RESP
+        usage: idempotency_keys
+      - target: redpanda
+        protocol: Kafka
+        topics: [consent.events]
+      - target: opa
+        protocol: HTTP
+        usage: policy_eval
+      - target: kms
+        protocol: cloud-sdk
+        usage: audit_event_signing
+      - target: objectstore
+        protocol: cloud-sdk
+        usage: audit_archival (B-02 pending)
+
+  - id: registry
+    type: service
+    path: services/registry
+    port: 3001
+    inbound:
+      - source: trust-node
+      - source: admin
+    outbound:
+      - target: postgres
+        protocol: TCP/SQL
+
+  - id: trust-node
+    type: service
+    path: services/trust-node
+    port: 3003
+    inbound:
+      - source: peer_trust_nodes
+        protocol: HTTP/REST
+        auth: kms_signature
+    outbound:
+      - target: postgres
+        protocol: TCP/SQL
+      - target: registry
+        protocol: HTTP
+        usage: node_lookup
+      - target: kms
+        protocol: cloud-sdk
+        usage: sign_and_verify_sync (B-01 pending)
+
+  - id: outbox_publisher
+    type: worker
+    path: services/control-plane/src/adapter/kafka/outbox-publisher.ts
+    note: runs within control-plane process; candidate for extraction (SV-01)
+    outbound:
+      - target: postgres
+        protocol: TCP/SQL
+        usage: drain_outbox_rows
+      - target: redpanda
+        protocol: Kafka
+        usage: publish_outbox_events
+
+infrastructure:
+  - id: postgres
+    type: database
+    version: "16"
+    connection_pooler: pgbouncer
+    mode: transaction
+
+  - id: redis
+    type: cache
+    version: "7"
+    usage: idempotency_keys
+
+  - id: redpanda
+    type: message_broker
+    kafka_compatible: true
+    topics:
+      - name: consent.events
+        partitions: 1  # SV-04: increase before v1.0
+
+  - id: opa
+    type: policy_engine
+    bundle: policies/
+
+  - id: kms
+    type: adapter
+    implementations: [stub, aws, gcp, azure]
+    selector: CLOUD_PROVIDER env
+
+  - id: objectstore
+    type: adapter
+    implementations: [stub, aws, gcp, azure]
+    selector: CLOUD_PROVIDER env

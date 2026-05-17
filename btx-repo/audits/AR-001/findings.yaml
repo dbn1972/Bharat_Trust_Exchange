@@ -1,0 +1,98 @@
+---
+# BTX AR-001 Security Findings Register
+version: "1.0"
+date: "2026-05-17"
+standards: [OWASP-Top10-2021, OWASP-ASVS-4.0, CWE-Top25]
+
+findings:
+  - id: F-01
+    title: "SQL Injection"
+    owasp: A03
+    cwe: CWE-89
+    severity: clear
+    status: no_finding
+    location: "services/control-plane/src/adapter/db/repository.ts"
+    note: "All queries parameterised via pg driver"
+
+  - id: F-02
+    title: "No authentication on registry and trust-node endpoints"
+    owasp: A07
+    cwe: CWE-306
+    asvs: V2.1
+    severity: high
+    status: open
+    location: "services/registry/src/server.ts, services/trust-node/src/server.ts"
+    recommendation: "Add bearer token or mTLS before GA public deployment"
+
+  - id: F-03
+    title: "Broken access control on consent query"
+    owasp: A01
+    cwe: CWE-285
+    severity: clear
+    status: no_finding
+    location: "services/control-plane/src/domain/consent-service.ts::query"
+
+  - id: F-04
+    title: "COSIGN_EXPERIMENTAL env var deprecated"
+    owasp: A05
+    cwe: CWE-16
+    severity: low
+    status: open
+    location: ".github/workflows/release.yml"
+    recommendation: "Remove COSIGN_EXPERIMENTAL=1"
+
+  - id: F-05
+    title: "subject_id PII storage confirmation needed"
+    owasp: A02
+    cwe: CWE-312
+    asvs: V6.2
+    severity: medium
+    status: verify
+    location: "services/control-plane/src/adapter/db/repository.ts"
+    recommendation: "Confirm subject_id in audit_events is HMAC-hashed not plaintext"
+
+  - id: F-06
+    title: "No PR-level npm audit step in CI"
+    owasp: A06
+    severity: medium
+    status: open
+    recommendation: "Add npm audit --audit-level=high to CI workflow"
+
+  - id: F-07
+    title: "KMS stub allowed in production via CLOUD_PROVIDER=stub"
+    owasp: A07
+    cwe: CWE-798
+    asvs: "V2.9, V6.4"
+    severity: high
+    status: open
+    location: "pkg/bootstrap/src/cloud-adapters.ts"
+    recommendation: >
+      Add guard: if CLOUD_PROVIDER=stub && NODE_ENV=production → throw Error
+
+  - id: F-08
+    title: "kmsVerify not wired in trust-node — B-01"
+    owasp: A08
+    cwe: CWE-345
+    asvs: V10.3
+    severity: critical
+    status: open
+    linked_item: B-01
+    linked_condition: C-01
+    location: "services/trust-node/src/server.ts"
+    recommendation: "Wire real KMS adapter before federation is enabled"
+
+  - id: F-09
+    title: "Server-Side Request Forgery"
+    owasp: A10
+    cwe: CWE-918
+    severity: clear
+    status: no_finding
+
+  - id: F-10
+    title: "No PII redaction in pino logger"
+    owasp: A09
+    cwe: CWE-778
+    severity: medium
+    status: open
+    location: "All services — pino logger config"
+    recommendation: "Add pino-redact for subjectId, principalId, x-btx-caller"

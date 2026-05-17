@@ -1,0 +1,109 @@
+---
+# BTX AR-001 Product Inventory
+# Format: W3C SPDX-inspired YAML for internal tracking
+version: "1.0"
+date: "2026-05-17"
+scope: "btx-v0.1.0"
+
+services:
+  - id: control-plane
+    path: services/control-plane
+    port: 3002
+    status: implemented
+    language: TypeScript 5.4
+    runtime: Node 20 LTS
+    framework: Fastify 4
+    endpoints: 5
+    tests_unit: 12
+    tests_api_negative: 20
+    blocking_items: [B-02]
+    non_blocking_items: [G-03, G-04]
+
+  - id: registry
+    path: services/registry
+    port: 3001
+    status: implemented
+    language: TypeScript 5.4
+    runtime: Node 20 LTS
+    framework: Fastify 4
+    endpoints: 3
+    tests_unit: 0
+    non_blocking_items: [G-05]
+
+  - id: trust-node
+    path: services/trust-node
+    port: 3003
+    status: implemented
+    language: TypeScript 5.4
+    runtime: Node 20 LTS
+    framework: Fastify 4
+    endpoints: 3
+    tests_unit: 0
+    blocking_items: [B-01]
+
+packages:
+  - id: pkg-kms
+    path: pkg/adapter/kms
+    clouds: [stub, aws, gcp, azure]
+    status: implemented
+
+  - id: pkg-objectstore
+    path: pkg/adapter/objectstore
+    clouds: [stub, aws, gcp, azure]
+    status: implemented
+
+  - id: pkg-bootstrap
+    path: pkg/bootstrap
+    status: implemented
+
+apps:
+  - id: portal
+    path: apps/portal
+    status: scaffold
+    framework: React + Tailwind CSS
+    components: [Button, StatusBadge, ConsentCard, GrantFlow]
+    note: "Visual implementation TBD; scaffold from P-24 handoff"
+
+adrs:
+  - id: ADR-0020
+    title: Service architecture baseline
+    status: accepted
+  - id: ADR-0021
+    title: Transactional outbox
+    status: accepted
+  - id: ADR-0022
+    title: Redis idempotency
+    status: accepted
+  - id: ADR-0023
+    title: Stubs-first testing
+    status: accepted
+  - id: ADR-0024
+    title: API versioning strategy
+    status: accepted
+  - id: ADR-0025
+    title: Data residency / cross-border
+    status: accepted
+
+open_items:
+  - id: B-01
+    severity: blocking
+    service: trust-node
+    description: "kmsVerify not wired in server.ts — stub used in prod"
+    linked_cr: CR-001
+  - id: B-02
+    severity: blocking
+    service: control-plane
+    description: "ObjectStoreAdapter not wired for audit archival"
+    linked_cr: CR-001
+  - id: G-03
+    severity: high
+    service: control-plane
+    description: "Consent expiry job not implemented"
+  - id: G-04
+    severity: medium
+    service: control-plane
+    description: "Redis idempotency not behind interface"
+  - id: G-05
+    severity: medium
+    service: registry
+    description: "api_version column missing from trust_nodes schema"
