@@ -31,3 +31,9 @@
 | [015](0015-kafka-or-nats-for-audit-pipeline.md) | Kafka (or NATS JetStream) for audit pipeline | accepted | 2026-05-16 | Arch §20.3 |
 | [016](0016-opentofu-helm-argocd-deployment.md) | OpenTofu + Helm + ArgoCD for declarative multi-cloud | accepted | 2026-05-16 | Arch §20.3 |
 | [017](0017-ed25519-default-signing.md) | Ed25519 default for signing; ECDSA-P256 fallback | accepted | 2026-05-16 | Arch §20.3 |
+| [020](0020-btx-hot-path-stack-v1.md) | BTX hot-path stack v1 | accepted | 2026-05-16 | ADR-0020 |
+| [021](0021-outbox-only-db-to-kafka-contract.md) | Outbox-only DB-to-Kafka contract | accepted | 2026-05-16 | Phase 1 |
+| [022](0022-idempotency-key-contract.md) | Idempotency-Key contract | accepted | 2026-05-16 | Phase 1 |
+| [023](0023-stubs-first-localstack-optional.md) | Stubs-first; LocalStack optional | accepted | 2026-05-16 | Phase 1 |
+| [024](0024-api-versioning-strategy.md) | API versioning strategy (URL path, 2-version window) | accepted | 2026-05-17 | BRD §12, ADR-0010 |
+| [025](0025-data-residency-cross-border.md) | Data residency and cross-border transfer controls | accepted | 2026-05-17 | DPDP 2023 §16, BRD §14 |
